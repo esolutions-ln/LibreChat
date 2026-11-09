@@ -48,8 +48,8 @@ export interface AnalysisHandlers {
   limits: RequestHandler;
 }
 
-export const DATASET_ID_RE = /^ds_[0-9a-f]{12}$/;
-export const RUN_ID_RE = /^run_[0-9a-f]{12}$/;
+export const DATASET_ID_RE: RegExp = /^ds_[0-9a-f]{12}$/;
+export const RUN_ID_RE: RegExp = /^run_[0-9a-f]{12}$/;
 const FILE_NAME_RE = /^[\w][\w .-]{0,119}$/;
 const MAX_COLUMNS = 500;
 const MAX_COLUMN_NAME = 200;
@@ -62,6 +62,8 @@ const hash = (s: string): string => createHash('sha256').update(s).digest('hex')
 
 export function createAnalysisHandlers(deps: AnalysisHandlerDeps): AnalysisHandlers {
   const { config, analysis } = deps;
+  /** In-flight executions per user on this instance; the rate limiter covers bursts across instances. */
+  const running = new Map<string, number>();
 
   const actorOf = (req: Request, userId: string): AnalysisAuditEntry['actor'] => {
     const u = (req as Request & { user?: SessionUser }).user;
@@ -348,6 +350,15 @@ export function createAnalysisHandlers(deps: AnalysisHandlerDeps): AnalysisHandl
       const code = body.code;
       const target: AnalysisTarget = body.target === 'real' ? 'real' : 'synthetic';
       const actor = actorOf(req, user);
+      if ((running.get(user) ?? 0) >= config.analysis.maxConcurrentRuns) {
+        res.setHeader('Retry-After', '5');
+        res.status(429).json({
+          type: 'nmb_analysis_busy',
+          message: 'Too many analyses are running. Wait for one to finish.',
+        });
+        return;
+      }
+      running.set(user, (running.get(user) ?? 0) + 1);
       try {
         const run = await analysis.execute(req.params.id, { user, code, target });
         await audit({
@@ -377,6 +388,13 @@ export function createAnalysisHandlers(deps: AnalysisHandlerDeps): AnalysisHandl
           metadata: { target, code_sha256: hash(code), code_chars: code.length },
         });
         fail(res, error);
+      } finally {
+        const left = (running.get(user) ?? 1) - 1;
+        if (left > 0) {
+          running.set(user, left);
+        } else {
+          running.delete(user);
+        }
       }
     }) as RequestHandler,
 

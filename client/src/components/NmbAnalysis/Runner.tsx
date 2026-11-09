@@ -78,7 +78,11 @@ export default function Runner({ datasetId, hasSynthetic, limits }: Props) {
       )}
       {execute.isError && (
         <p role="alert" className="text-text-destructive text-sm">
-          {localize('com_nmb_analysis_run_failed')}
+          {localize(
+            (execute.error as { response?: { status?: number } } | null)?.response?.status === 429
+              ? 'com_nmb_analysis_rate_limited'
+              : 'com_nmb_analysis_run_failed',
+          )}
         </p>
       )}
       {run && <Result run={run} />}

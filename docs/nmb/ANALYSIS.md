@@ -73,4 +73,8 @@ Same routes, mapped 1:1 from the scanner:
 `GET|POST /datasets`, `GET|DELETE /datasets/:id`, `POST /datasets/:id/synthesize`, `GET /datasets/:id/synthetic`,
 `POST /datasets/:id/execute`, `GET /runs/:id`, `GET /runs/:id/files/:name`, `GET /limits`.
 `GET /api/nmb/me` gains `analysis: boolean`. Enabled by `NMB_ANALYSIS_ENABLED` (requires the gateway to be on).
+`POST /datasets/:id/execute` is limited per user (429 `nmb_analysis_rate_limited`, with `Retry-After`) and capped at a
+number of runs in flight per user per instance (429 `nmb_analysis_busy`). Settings, all optional:
+`NMB_ANALYSIS_EXECUTE_MAX` (20), `NMB_ANALYSIS_EXECUTE_WINDOW_MINUTES` (15), `NMB_ANALYSIS_MAX_CONCURRENT_RUNS` (2).
+The rate limit uses the shared limiter store (Redis when configured); the in-flight cap is per process.
 Every upload, synthesize, execute and delete is audited with counts and ids only (never code, values or column names).

@@ -46,6 +46,9 @@ export function loadNmbConfig(env: NodeJS.ProcessEnv = process.env): NmbConfig {
       maxUploadBytes: positiveInt(env.NMB_ANALYSIS_MAX_UPLOAD_BYTES, 26_214_400),
       maxCodeChars: positiveInt(env.NMB_ANALYSIS_MAX_CODE_CHARS, 50_000),
       executeTimeoutMs: positiveInt(env.NMB_ANALYSIS_EXECUTE_TIMEOUT_MS, 120_000),
+      executeRateMax: positiveInt(env.NMB_ANALYSIS_EXECUTE_MAX, 20),
+      executeRateWindowMinutes: positiveInt(env.NMB_ANALYSIS_EXECUTE_WINDOW_MINUTES, 15),
+      maxConcurrentRuns: positiveInt(env.NMB_ANALYSIS_MAX_CONCURRENT_RUNS, 2),
     },
   };
 }

@@ -3878,6 +3878,7 @@
   "com_nmb_analysis_test_needs_twin": "Generate the synthetic twin to test code on it.",
   "com_nmb_analysis_run_real": "Run on real data",
   "com_nmb_analysis_running": "Running…",
+  "com_nmb_analysis_rate_limited": "Too many runs in a short time. Wait a moment, then try again.",
   "com_nmb_analysis_run_failed": "The run could not be completed. Try again.",
   "com_nmb_analysis_confirm_title": "Run on real data?",
   "com_nmb_analysis_confirm_body": "The code will run on the real dataset inside the secure sandbox. The output stays private to you and is never sent to the model.",

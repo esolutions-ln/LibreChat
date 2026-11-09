@@ -14,7 +14,15 @@ const CODE = "import pandas as pd\nprint(pd.read_csv(DATA_PATH)['secret_col'].su
 
 const config: NmbConfig = {
   ...baseConfig,
-  analysis: { enabled: true, maxUploadBytes: 100, maxCodeChars: 200, executeTimeoutMs: 1000 },
+  analysis: {
+    enabled: true,
+    maxUploadBytes: 100,
+    maxCodeChars: 200,
+    executeTimeoutMs: 1000,
+    executeRateMax: 20,
+    executeRateWindowMinutes: 15,
+    maxConcurrentRuns: 2,
+  },
 };
 
 const dataset = (over: Partial<AnalysisDataset> = {}): AnalysisDataset => ({
@@ -297,6 +305,57 @@ describe('execute', () => {
     });
     await call(handlers.execute, withId({ body: { code: CODE, target: 'synthetic' } }));
     expect(audits[0].metadata).toMatchObject({ status: 'rejected', violations: 1 });
+  });
+
+  describe('concurrency cap', () => {
+    const body = { code: CODE, target: 'real' };
+
+    it('answers 429 once a user has the maximum runs in flight, then frees the slot', async () => {
+      const gates: Array<() => void> = [];
+      const execute = jest
+        .fn()
+        .mockImplementation(() => new Promise((resolve) => gates.push(() => resolve(run()))));
+      const { handlers } = setup({ analysis: fakeAnalysis({ execute }) });
+      const first = call(handlers.execute, withId({ body }));
+      const second = call(handlers.execute, withId({ body }));
+      const third = await call(handlers.execute, withId({ body }));
+      expect(third.res.statusCode).toBe(429);
+      expect(third.res.headers['Retry-After']).toBe('5');
+      expect(execute).toHaveBeenCalledTimes(2);
+
+      gates.forEach((release) => release());
+      await Promise.all([first, second]);
+      const again = call(handlers.execute, withId({ body }));
+      gates.forEach((release) => release());
+      expect((await again).res.statusCode).toBe(200);
+    });
+
+    it('does not count other users against the cap', async () => {
+      const gates: Array<() => void> = [];
+      const execute = jest
+        .fn()
+        .mockImplementation(() => new Promise((resolve) => gates.push(() => resolve(run()))));
+      const { handlers } = setup({ analysis: fakeAnalysis({ execute }) });
+      const mine = [
+        call(handlers.execute, withId({ body })),
+        call(handlers.execute, withId({ body })),
+      ];
+      const other = call(
+        handlers.execute,
+        withId({ body, user: { id: 'user-2', role: 'USER', username: 'other' } }),
+      );
+      expect(execute).toHaveBeenCalledTimes(3);
+      gates.forEach((release) => release());
+      await Promise.all([...mine, other]);
+    });
+
+    it('frees the slot when the scanner fails', async () => {
+      const execute = jest.fn().mockRejectedValue(new ScannerError('unavailable'));
+      const { handlers } = setup({ analysis: fakeAnalysis({ execute }) });
+      for (let i = 0; i < 5; i++) {
+        expect((await call(handlers.execute, withId({ body }))).res.statusCode).toBe(503);
+      }
+    });
   });
 
   it('hides scanner failure detail behind a 503 and audits the failure', async () => {

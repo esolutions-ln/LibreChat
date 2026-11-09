@@ -18,6 +18,9 @@ export const baseConfig: NmbConfig = {
     maxUploadBytes: 1_000_000,
     maxCodeChars: 1_000,
     executeTimeoutMs: 5_000,
+    executeRateMax: 20,
+    executeRateWindowMinutes: 15,
+    maxConcurrentRuns: 2,
   },
 };
 

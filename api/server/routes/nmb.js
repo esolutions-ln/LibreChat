@@ -27,8 +27,16 @@ router.post('/blocklist', reviewer, h('addBlocklist'));
  * `NMB_ANALYSIS_ENABLED` are on, and every call is scoped to the session user.
  */
 const multer = require('multer');
+const { createAnalysisExecuteLimiter } = require('~/server/middleware/limiters/analysisLimiter');
 
 const a = (name) => (req, res, next) => getNmb().analysisHandlers[name](req, res, next);
+
+/** Built on first use so the limits are read from the NMB config after dotenv has loaded. */
+let executeLimiter;
+const limitExecute = (req, res, next) => {
+  executeLimiter ??= createAnalysisExecuteLimiter(getNmb().config.analysis);
+  return executeLimiter(req, res, next);
+};
 
 /** Buffers one CSV in memory, bounded by `NMB_ANALYSIS_MAX_UPLOAD_BYTES`. Never written to disk here. */
 const csvUpload = (req, res, next) => {
@@ -58,7 +66,7 @@ analysis.get('/datasets/:id', a('get'));
 analysis.delete('/datasets/:id', a('remove'));
 analysis.post('/datasets/:id/synthesize', a('synthesize'));
 analysis.get('/datasets/:id/synthetic', a('synthetic'));
-analysis.post('/datasets/:id/execute', a('execute'));
+analysis.post('/datasets/:id/execute', limitExecute, a('execute'));
 analysis.get('/runs/:id', a('getRun'));
 analysis.get('/runs/:id/files/:name', a('getRunFile'));
 router.use('/analysis', analysis);

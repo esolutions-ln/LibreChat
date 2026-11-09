@@ -101,6 +101,11 @@ export interface NmbAnalysisConfig {
   maxCodeChars: number;
   /** Upper bound for one execute call, including the scanner's own sandbox timeout. */
   executeTimeoutMs: number;
+  /** Executions one user may start per window (synthetic and real both count). */
+  executeRateMax: number;
+  executeRateWindowMinutes: number;
+  /** Executions one user may have running at once on this instance. */
+  maxConcurrentRuns: number;
 }
 
 export type AnalysisColumnKind =
