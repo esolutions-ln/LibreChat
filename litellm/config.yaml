@@ -1,0 +1,29 @@
+# LiteLLM proxy for the NMB stack. LibreChat talks only to this proxy (http://litellm:4000/v1);
+# the proxy is the one place that holds provider keys and reaches the internet.
+# Secrets are read from the environment (see docker-compose.nmb.yml); none are stored here.
+#
+# Edit `model_list` to add providers. The name on the left is what LibreChat selects.
+model_list:
+  - model_name: default
+    litellm_params:
+      model: os.environ/LITELLM_UPSTREAM_MODEL   # e.g. anthropic/claude-sonnet-5-5 or openai/gpt-4o
+      api_key: os.environ/LITELLM_UPSTREAM_API_KEY
+
+# Second line of defence behind the NMB gateway scanner: masks PII in every prompt that reaches
+# the provider, and restores it in the reply. Fails closed if Presidio is unreachable.
+guardrails:
+  - guardrail_name: presidio-pii
+    litellm_params:
+      guardrail: presidio
+      mode: pre_call
+      default_on: true
+      output_parse_pii: true
+      presidio_language: en
+
+litellm_settings:
+  drop_params: true
+  # Do not write prompts or completions to logs: they may hold data the scanner let through.
+  turn_off_message_logging: true
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

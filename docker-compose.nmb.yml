@@ -38,6 +38,56 @@ services:
       timeout: 5s
       retries: 3
 
+  # LLM egress: LibreChat -> litellm -> provider. LiteLLM holds the provider key and is the only
+  # service here with internet access; Presidio masks PII in each prompt before it leaves.
+  # Point LibreChat at it with a custom endpoint (baseURL http://litellm:4000/v1,
+  # apiKey ${LITELLM_MASTER_KEY}); see docs/nmb/LITELLM.md.
+  litellm:
+    image: ghcr.io/berriai/litellm:${LITELLM_TAG:-main-stable}   # pin a version in production
+    container_name: nmb-litellm
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY in .env}
+      LITELLM_UPSTREAM_MODEL: ${LITELLM_UPSTREAM_MODEL:?set LITELLM_UPSTREAM_MODEL in .env}
+      LITELLM_UPSTREAM_API_KEY: ${LITELLM_UPSTREAM_API_KEY:?set LITELLM_UPSTREAM_API_KEY in .env}
+      PRESIDIO_ANALYZER_API_BASE: http://presidio-analyzer:3000
+      PRESIDIO_ANONYMIZER_API_BASE: http://presidio-anonymizer:3000
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml:ro
+    expose:
+      - "4000"          # internal only: LibreChat reaches it by service name; do not publish
+    networks:
+      - default         # outbound access to the provider
+      - nmb-internal    # reachable from api, and from the Presidio services
+    depends_on:
+      - presidio-analyzer
+      - presidio-anonymizer
+
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:${PRESIDIO_TAG:-latest}   # pin a version in production
+    container_name: nmb-presidio-analyzer
+    restart: unless-stopped
+    expose:
+      - "3000"
+    networks:
+      - nmb-internal
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+  presidio-anonymizer:
+    image: mcr.microsoft.com/presidio-anonymizer:${PRESIDIO_TAG:-latest}   # pin a version in production
+    container_name: nmb-presidio-anonymizer
+    restart: unless-stopped
+    expose:
+      - "3000"
+    networks:
+      - nmb-internal
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
   # The gateway reaches the scanner over the internal network. Set NMB_ANALYSIS_ENABLED=true in .env
   # to turn on the synthetic-data analysis workbench (docs/nmb/ANALYSIS.md).
   api:
