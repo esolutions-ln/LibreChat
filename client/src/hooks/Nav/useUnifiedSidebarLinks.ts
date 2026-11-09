@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
-import { BarChart3, MessagesSquare, ShieldCheck } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUserKeyQuery } from 'librechat-data-provider/react-query';
 import { getConfigDefaults, getEndpointField } from 'librechat-data-provider';
+import { BarChart3, DatabaseZap, MessagesSquare, ShieldCheck } from 'lucide-react';
 import type { TEndpointsConfig } from 'librechat-data-provider';
 import type { NavLink } from '~/common';
 import {
@@ -36,6 +36,7 @@ export default function useUnifiedSidebarLinks() {
   );
   const { data: nmbMe } = useNmbMeQuery({ enabled: !!user });
   const isNmbReviewer = nmbMe?.enabled === true && nmbMe.reviewer === true;
+  const isNmbAnalysis = nmbMe?.enabled === true && nmbMe.analysis === true;
   const insightsFeatureEnabled = startupConfig?.insightsEnabled === true;
   const isInsightsRoute = location.pathname.startsWith('/insights');
   const { data: insightsAccess, isLoading: isInsightsAccessLoading } = useInsightsAccessQuery(
@@ -84,21 +85,38 @@ export default function useUnifiedSidebarLinks() {
       Component: ConversationsSection,
     };
 
-    const reviewsLinks: NavLink[] = isNmbReviewer
-      ? [
-          {
-            title: 'com_nmb_reviews_navigation',
-            label: '',
-            icon: ShieldCheck,
-            id: 'nmb-reviews',
-            onClick: () => {
-              if (!location.pathname.startsWith('/reviews')) {
-                navigate('/reviews');
-              }
+    const reviewsLinks: NavLink[] = [
+      ...(isNmbReviewer
+        ? [
+            {
+              title: 'com_nmb_reviews_navigation' as const,
+              label: '',
+              icon: ShieldCheck,
+              id: 'nmb-reviews',
+              onClick: () => {
+                if (!location.pathname.startsWith('/reviews')) {
+                  navigate('/reviews');
+                }
+              },
             },
-          },
-        ]
-      : [];
+          ]
+        : []),
+      ...(isNmbAnalysis
+        ? [
+            {
+              title: 'com_nmb_analysis_navigation' as const,
+              label: '',
+              icon: DatabaseZap,
+              id: 'nmb-analysis',
+              onClick: () => {
+                if (!location.pathname.startsWith('/analysis')) {
+                  navigate('/analysis');
+                }
+              },
+            },
+          ]
+        : []),
+    ];
 
     if (
       !insightsFeatureEnabled ||
@@ -130,6 +148,7 @@ export default function useUnifiedSidebarLinks() {
     isInsightsAccessLoading,
     isInsightsRoute,
     isNmbReviewer,
+    isNmbAnalysis,
     location.pathname,
     navigate,
     sideNavLinks,

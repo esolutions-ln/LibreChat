@@ -1,13 +1,5 @@
 import type { AxiosResponse } from 'axios';
 import type {
-  TTracePage,
-  TTracePageParams,
-  TTraceAvailability,
-  TTraceRecordParams,
-  TTraceRecordDetail,
-} from './types/traces';
-import type { TInsightsAccessResponse, TInsightsParams, TInsightsResponse } from './types/insights';
-import type {
   TNmbMe,
   TNmbReview,
   TNmbOriginal,
@@ -18,7 +10,21 @@ import type {
   TNmbBlocklistChoice,
   TNmbBlocklistEntry,
   TNmbUnmaskResponse,
+  TNmbDataset,
+  TNmbRun,
+  TNmbExecuteBody,
+  TNmbSynthesizeBody,
+  TNmbSyntheticData,
+  TNmbAnalysisLimits,
 } from './types/nmb';
+import type {
+  TTracePage,
+  TTracePageParams,
+  TTraceAvailability,
+  TTraceRecordParams,
+  TTraceRecordDetail,
+} from './types/traces';
+import type { TInsightsAccessResponse, TInsightsParams, TInsightsResponse } from './types/insights';
 import type { ScheduleMCPConsentView, ConfirmScheduleMCPConsent } from './types/scheduleConsent';
 import type { CodeSetupAttempt, CodeSetupApprovalRequest } from './codeSetup';
 import type { TFileConfig } from './file-config';
@@ -65,7 +71,8 @@ export function getInsightsAccess(): Promise<TInsightsAccessResponse> {
 export const getNmbMe = (): Promise<TNmbMe> => request.get(endpoints.nmbMe());
 export const getNmbReviews = (status?: string): Promise<TNmbReviewsResponse> =>
   request.get(endpoints.nmbReviews(status));
-export const getNmbReview = (id: string): Promise<TNmbReview> => request.get(endpoints.nmbReview(id));
+export const getNmbReview = (id: string): Promise<TNmbReview> =>
+  request.get(endpoints.nmbReview(id));
 export const getNmbReviewOriginal = (id: string): Promise<TNmbOriginal> =>
   request.get(endpoints.nmbReviewOriginal(id));
 export const approveNmbReview = (
@@ -85,6 +92,30 @@ export const getNmbSubmission = (id: string): Promise<TNmbSubmission> =>
   request.get(endpoints.nmbSubmission(id));
 export const unmaskNmbText = (text: string): Promise<TNmbUnmaskResponse> =>
   request.post(endpoints.nmbUnmask(), { text });
+export const getNmbDatasets = (): Promise<{ items: TNmbDataset[] }> =>
+  request.get(endpoints.nmbDatasets());
+export const getNmbDataset = (id: string): Promise<TNmbDataset> =>
+  request.get(endpoints.nmbDataset(id));
+export const uploadNmbDataset = (formData: FormData): Promise<TNmbDataset> =>
+  request.postMultiPart(endpoints.nmbDatasets(), formData);
+export const deleteNmbDataset = (id: string): Promise<{ deleted: boolean }> =>
+  request.delete(endpoints.nmbDataset(id));
+export const synthesizeNmbDataset = (id: string, body: TNmbSynthesizeBody): Promise<TNmbDataset> =>
+  request.post(endpoints.nmbDatasetSynthesize(id), body);
+export const getNmbSynthetic = (id: string): Promise<TNmbSyntheticData> =>
+  request.get(endpoints.nmbDatasetSynthetic(id));
+export const executeNmbDataset = (id: string, body: TNmbExecuteBody): Promise<TNmbRun> =>
+  request.post(endpoints.nmbDatasetExecute(id), body);
+export const getNmbRun = (id: string): Promise<TNmbRun> => request.get(endpoints.nmbRun(id));
+export const downloadNmbRunFile = async (id: string, name: string): Promise<Blob> => {
+  const res = await request.getResponse<Blob>(endpoints.nmbRunFile(id, name), {
+    responseType: 'blob',
+    headers: { Accept: 'application/octet-stream' },
+  });
+  return res.data;
+};
+export const getNmbAnalysisLimits = (): Promise<TNmbAnalysisLimits> =>
+  request.get(endpoints.nmbAnalysisLimits());
 
 export function getConversationTraceAvailability(
   conversationId: string,

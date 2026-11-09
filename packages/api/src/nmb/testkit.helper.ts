@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
-import type { ScannerClient } from './scanner';
 import type { NmbConfig, ReviewItem, ScanResult } from './types';
+import type { ScannerClient } from './scanner';
 
 export const SECRET = 'ACCT-9876543210-SECRET';
 
@@ -13,6 +13,12 @@ export const baseConfig: NmbConfig = {
   defaultDepartment: undefined,
   maskNote: true,
   regexBlocklist: false,
+  analysis: {
+    enabled: false,
+    maxUploadBytes: 1_000_000,
+    maxCodeChars: 1_000,
+    executeTimeoutMs: 5_000,
+  },
 };
 
 export function scanResult(over: Partial<ScanResult> = {}): ScanResult {

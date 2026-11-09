@@ -43,3 +43,22 @@ unmask:
 
 review:
   reviewer_roles: [reviewer, admin]
+
+# Synthetic-data analysis (docs/nmb/ANALYSIS.md). Omitted keys fall back to app/policy.py defaults.
+analysis:
+  enabled: true
+  engine: builtin                # builtin | sdv (needs requirements-analysis.txt)
+  max_upload_bytes: 26214400     # 25 MB CSV
+  max_rows: 500000
+  max_code_chars: 50000
+  timeout_s: 30
+  memory_mb: 2048
+  max_output_bytes: 200000       # captured stdout/stderr
+  max_output_file_bytes: 5242880
+  max_output_files: 20
+  max_concurrent_runs: 2
+  synthetic_max_rows: 1000
+  synthetic_min_category_count: 5
+  dataset_ttl_hours: 168         # uploaded real data and its synthetic twin
+  run_ttl_hours: 72              # run output, including output of real-data runs
+  allowed_imports: [pandas, numpy, math, statistics, datetime, json, re, collections, itertools, decimal, matplotlib, plotly]

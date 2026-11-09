@@ -51,6 +51,11 @@ const loadNmbReviewsView = () =>
     Component: m.default,
   }));
 
+const loadNmbAnalysisView = () =>
+  importWithRecovery(() => import('~/components/NmbAnalysis')).then((m) => ({
+    Component: m.default,
+  }));
+
 const loadProjectsView = () =>
   importWithRecovery(() => import('~/components/Projects')).then((m) => ({
     Component: m.ProjectsView,
@@ -176,6 +181,10 @@ export const router = createBrowserRouter(
                 {
                   path: 'reviews',
                   lazy: loadNmbReviewsView,
+                },
+                {
+                  path: 'analysis',
+                  lazy: loadNmbAnalysisView,
                 },
                 {
                   path: 'skills/new',

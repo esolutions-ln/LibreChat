@@ -21,13 +21,33 @@ services:
       - ./nmb-scanner/config:/srv/config:ro
     expose:
       - "8088"          # internal only: do NOT publish this port; only the gateway should reach it
+    # The analysis sandbox runs user-supplied code next to real data. The scanner therefore sits on
+    # an internal-only network (no route to the internet) and runs with a reduced privilege set.
     networks:
-      - default
+      - nmb-internal
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: ${NMB_SCANNER_MEM_LIMIT:-2g}
+    pids_limit: 256
+    tmpfs:
+      - /tmp:size=512m
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,os;urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8088/health',headers={'X-NMB-Service-Key':os.environ['NMB_SERVICE_KEY']}))"]
       interval: 30s
       timeout: 5s
       retries: 3
+
+  # The gateway reaches the scanner over the internal network. Set NMB_ANALYSIS_ENABLED=true in .env
+  # to turn on the synthetic-data analysis workbench (docs/nmb/ANALYSIS.md).
+  api:
+    networks:
+      - default
+      - nmb-internal
+
+networks:
+  nmb-internal:
+    internal: true
 
 volumes:
   nmb-scanner-data:

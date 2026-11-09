@@ -1,9 +1,12 @@
 const {
   loadNmbConfig,
+  createScannerCall,
   createScannerClient,
+  createAnalysisClient,
   createNmbChatGateway,
   createNmbUploadGate,
   createNmbHandlers,
+  createAnalysisHandlers,
 } = require('@librechat/api');
 const { SystemCapabilities } = require('@librechat/data-schemas');
 const { hasCapability } = require('~/server/middleware/roles/capabilities');
@@ -46,9 +49,14 @@ function getNmb() {
   }
   const config = loadNmbConfig(process.env);
   const scanner = createScannerClient(config);
+  const analysis = createAnalysisClient(
+    createScannerCall(config),
+    config.analysis.executeTimeoutMs,
+  );
   instance = {
     config,
     scanner,
+    analysisHandlers: createAnalysisHandlers({ config, analysis, recordAudit }),
     chatGateway: createNmbChatGateway({ config, scanner, getFiles: getFilesForUser }),
     uploadGate: createNmbUploadGate({
       config,

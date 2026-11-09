@@ -9,3 +9,7 @@ presidio-anonymizer>=2.2.355
 spacy>=3.7
 cryptography>=42
 pyyaml>=6
+pandas>=2.0
+numpy>=1.26
+matplotlib>=3.8
+plotly>=5.20

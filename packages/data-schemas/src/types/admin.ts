@@ -1325,6 +1325,11 @@ export const AUDIT_ACTIONS = [
   'nmb_review.rejected',
   'nmb_review.blocklist_updated',
   'nmb_review.denied',
+  /** NMB synthetic-data analysis; target `{ type: 'nmb_dataset' | 'nmb_run', id }`. Ids and counts only, never code or values. */
+  'nmb_analysis.dataset_uploaded',
+  'nmb_analysis.synthesized',
+  'nmb_analysis.executed',
+  'nmb_analysis.dataset_deleted',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -1375,6 +1380,10 @@ export const AUDIT_ACTION_CATEGORY: Record<AuditAction, AuditCategory> = {
   'nmb_review.rejected': 'approval',
   'nmb_review.blocklist_updated': 'approval',
   'nmb_review.denied': 'approval',
+  'nmb_analysis.dataset_uploaded': 'tool_call',
+  'nmb_analysis.synthesized': 'tool_call',
+  'nmb_analysis.executed': 'tool_call',
+  'nmb_analysis.dataset_deleted': 'tool_call',
 };
 
 /** Result of the audited operation. Kept first-class instead of being encoded

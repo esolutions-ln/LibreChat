@@ -3,6 +3,11 @@ import type { NmbConfig } from './types';
 const TRUE = new Set(['1', 'true', 'yes', 'on']);
 const isTrue = (v: string | undefined): boolean => v != null && TRUE.has(v.trim().toLowerCase());
 
+function positiveInt(raw: string | undefined, fallback: number): number {
+  const n = Number.parseInt(raw ?? '', 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 function parseRoleDepartments(raw: string | undefined): Record<string, string> {
   if (!raw) {
     return {};
@@ -36,6 +41,12 @@ export function loadNmbConfig(env: NodeJS.ProcessEnv = process.env): NmbConfig {
     defaultDepartment: env.NMB_DEFAULT_DEPARTMENT?.trim() || undefined,
     maskNote: env.NMB_MASK_NOTE == null ? true : isTrue(env.NMB_MASK_NOTE),
     regexBlocklist: isTrue(env.NMB_SCANNER_REGEX_BLOCKLIST),
+    analysis: {
+      enabled: isTrue(env.NMB_ANALYSIS_ENABLED),
+      maxUploadBytes: positiveInt(env.NMB_ANALYSIS_MAX_UPLOAD_BYTES, 26_214_400),
+      maxCodeChars: positiveInt(env.NMB_ANALYSIS_MAX_CODE_CHARS, 50_000),
+      executeTimeoutMs: positiveInt(env.NMB_ANALYSIS_EXECUTE_TIMEOUT_MS, 120_000),
+    },
   };
 }
 

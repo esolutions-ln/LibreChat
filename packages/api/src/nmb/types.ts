@@ -91,4 +91,88 @@ export interface NmbConfig {
   maskNote: boolean;
   /** Scanner has the `regexes` blocklist extension (not in INTERFACE.md yet). */
   regexBlocklist: boolean;
+  analysis: NmbAnalysisConfig;
+}
+
+/** Synthetic-data analysis (docs/nmb/ANALYSIS.md). Off unless explicitly enabled. */
+export interface NmbAnalysisConfig {
+  enabled: boolean;
+  maxUploadBytes: number;
+  maxCodeChars: number;
+  /** Upper bound for one execute call, including the scanner's own sandbox timeout. */
+  executeTimeoutMs: number;
+}
+
+export type AnalysisColumnKind =
+  | 'numeric'
+  | 'integer'
+  | 'datetime'
+  | 'boolean'
+  | 'categorical'
+  | 'text'
+  | 'identifier';
+
+export interface AnalysisColumn {
+  name: string;
+  kind: AnalysisColumnKind;
+  null_fraction: number;
+  sensitive: boolean;
+  sensitive_entities: string[];
+  share: boolean;
+}
+
+export interface AnalysisSynthetic {
+  rows: number;
+  columns: string[];
+  engine: 'builtin' | 'sdv';
+  generated_at: string;
+}
+
+export interface AnalysisDataset {
+  id: string;
+  name: string;
+  rows: number;
+  created_at: string;
+  expires_at: string | null;
+  columns: AnalysisColumn[];
+  synthetic: AnalysisSynthetic | null;
+}
+
+export interface AnalysisSyntheticData {
+  columns: string[];
+  rows: unknown[][];
+  csv: string;
+}
+
+export type AnalysisTarget = 'synthetic' | 'real';
+export type AnalysisRunStatus = 'ok' | 'error' | 'rejected' | 'timeout';
+
+export interface AnalysisRunFile {
+  name: string;
+  bytes: number;
+  kind: string;
+}
+
+export interface AnalysisRun {
+  id: string;
+  dataset_id: string;
+  target: AnalysisTarget;
+  status: AnalysisRunStatus;
+  stdout: string;
+  stderr: string;
+  files: AnalysisRunFile[];
+  violations: string[];
+  duration_ms: number;
+  /** True only for synthetic runs. Real-run output must never be shown to the model. */
+  llm_safe: boolean;
+  created_at: string;
+}
+
+export interface AnalysisLimits {
+  max_code_chars: number;
+  timeout_s: number;
+  max_output_bytes: number;
+  allowed_imports: string[];
+  max_upload_bytes: number;
+  synthetic_max_rows: number;
 }

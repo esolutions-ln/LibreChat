@@ -72,14 +72,33 @@ export interface ScannerClient {
   ): Promise<string[]>;
 }
 
-export function createScannerClient(
-  config: Pick<NmbConfig, 'scannerUrl' | 'serviceKey' | 'timeoutMs'>,
+export interface ScannerCallOptions {
+  json?: unknown;
+  form?: FormData;
+  roles?: string[];
+  /** Return the raw `Response` (after status mapping) instead of parsed JSON, for file downloads. */
+  raw?: boolean;
+  /** Overrides the configured timeout (code execution outlasts a scan). */
+  timeoutMs?: number;
+}
+
+export type ScannerCall = (
+  method: string,
+  path: string,
+  opts?: ScannerCallOptions,
+) => Promise<unknown>;
+
+export type ScannerTransportConfig = Pick<NmbConfig, 'scannerUrl' | 'serviceKey' | 'timeoutMs'>;
+
+/** The single place that talks HTTP to the scanner: auth header, timeout and status mapping. */
+export function createScannerCall(
+  config: ScannerTransportConfig,
   fetchImpl: FetchLike = fetch,
-): ScannerClient {
-  async function call(
+): ScannerCall {
+  return async function call(
     method: string,
     path: string,
-    opts: { json?: unknown; form?: FormData; roles?: string[] } = {},
+    opts: ScannerCallOptions = {},
   ): Promise<unknown> {
     if (!config.scannerUrl || !config.serviceKey) {
       throw new ScannerError('unavailable');
@@ -96,7 +115,7 @@ export function createScannerClient(
       body = opts.form;
     }
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), config.timeoutMs);
+    const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? config.timeoutMs);
     let res: Response;
     try {
       res = await fetchImpl(`${config.scannerUrl}${path}`, {
@@ -128,12 +147,22 @@ export function createScannerClient(
     if (!res.ok) {
       throw new ScannerError('unavailable', res.status);
     }
+    if (opts.raw) {
+      return res;
+    }
     try {
       return await res.json();
     } catch {
       throw new ScannerError('bad_response', res.status);
     }
-  }
+  };
+}
+
+export function createScannerClient(
+  config: ScannerTransportConfig,
+  fetchImpl: FetchLike = fetch,
+): ScannerClient {
+  const call = createScannerCall(config, fetchImpl);
 
   const scan = async (p: Promise<unknown>): Promise<ScanResult> => {
     const out = await p;

@@ -8,6 +8,8 @@ Consumers: the gateway (Agent 2) calls `/scan/*` and `/unmask`; the review scree
 (`user`, `department`, `roles`) that the calling backend passes, so the backend must take these from the authenticated
 session, not from client input.
 
+Synthetic-data analysis endpoints (`/analysis/*`) are specified in `docs/nmb/ANALYSIS.md`.
+
 ## Conventions
 - Auth: header `X-NMB-Service-Key: <NMB_SERVICE_KEY>` on every request (401 if wrong/missing; disabled only if the env var is unset, dev only).
 - JSON in/out, UTF-8. Timestamps ISO-8601 UTC (`2026-11-09T10:15:00+00:00`).

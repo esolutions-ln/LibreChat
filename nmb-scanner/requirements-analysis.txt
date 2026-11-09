@@ -1,0 +1,3 @@
+# Optional: higher-fidelity synthetic data (set analysis.engine: sdv or NMB_SYNTH_ENGINE=sdv)
+-r requirements.txt
+sdv>=1.15

@@ -7,3 +7,5 @@ export * from './chat';
 export * from './files';
 export * from './blocklist';
 export * from './handlers';
+export * from './analysis';
+export * from './analyst';

@@ -1,10 +1,10 @@
 import { logger } from '@librechat/data-schemas';
 import type { Request, RequestHandler, Response } from 'express';
-import type { ScannerClient } from './scanner';
 import type { NmbConfig, ReviewItem } from './types';
+import type { ScannerClient } from './scanner';
 import { SCANNER_REVIEWER_ROLES, resolveIdentity } from './identity';
-import { PLACEHOLDER_RE, REVIEW_ID_RE } from './chat';
 import { parseChoices, type ChoiceError } from './blocklist';
+import { PLACEHOLDER_RE, REVIEW_ID_RE } from './chat';
 import { isNmbMisconfigured } from './config';
 import { ScannerError } from './scanner';
 
@@ -218,7 +218,12 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
           reviewer = false;
         }
       }
-      res.json({ enabled: config.enabled, reviewer, regexBlocklist: config.regexBlocklist });
+      res.json({
+        enabled: config.enabled,
+        reviewer,
+        regexBlocklist: config.regexBlocklist,
+        analysis: config.enabled && config.analysis.enabled,
+      });
     }) as RequestHandler,
 
     /** GET /submissions/:id, owner only */

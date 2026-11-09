@@ -7,6 +7,8 @@ export type TNmbMe = {
   reviewer: boolean;
   /** The scanner accepts pattern entries on the masked-data list. */
   regexBlocklist: boolean;
+  /** Synthetic-data analysis is available. */
+  analysis?: boolean;
 };
 
 /** One finding as shown to a reviewer. Never contains the raw value. */
@@ -85,4 +87,85 @@ export const NMB_PLACEHOLDER_REGEX = /<[A-Z][A-Z_]*_\d{3,}>/;
 export const stripNmbMaskNote = (text: string): string => {
   const i = text.indexOf(NMB_MASK_NOTE_MARKER);
   return i === -1 ? text : text.slice(0, i);
+};
+
+/** Synthetic-data analysis (`/api/nmb/datasets`, `/api/nmb/runs`). */
+export type TNmbColumnKind =
+  | 'numeric'
+  | 'integer'
+  | 'datetime'
+  | 'boolean'
+  | 'categorical'
+  | 'text'
+  | 'identifier';
+
+export type TNmbColumn = {
+  name: string;
+  kind: TNmbColumnKind;
+  null_fraction: number;
+  sensitive: boolean;
+  sensitive_entities: string[];
+  /** Default selection for the synthetic twin. */
+  share: boolean;
+};
+
+export type TNmbSynthetic = {
+  rows: number;
+  columns: string[];
+  engine: 'builtin' | 'sdv';
+  generated_at: string;
+};
+
+export type TNmbDataset = {
+  id: string;
+  name: string;
+  rows: number;
+  created_at: string;
+  expires_at?: string;
+  columns: TNmbColumn[];
+  synthetic: TNmbSynthetic | null;
+};
+
+export type TNmbSyntheticData = {
+  columns: string[];
+  rows: Array<Array<string | number | boolean | null>>;
+  csv: string;
+};
+
+export type TNmbSynthesizeBody = {
+  columns: string[];
+  rows?: number;
+  seed?: number;
+};
+
+export type TNmbRunTarget = 'synthetic' | 'real';
+export type TNmbRunStatus = 'ok' | 'error' | 'rejected' | 'timeout';
+
+export type TNmbRunFile = { name: string; bytes: number; kind: string };
+
+export type TNmbRun = {
+  id: string;
+  dataset_id: string;
+  target: TNmbRunTarget;
+  status: TNmbRunStatus;
+  stdout: string;
+  stderr: string;
+  files: TNmbRunFile[];
+  /** Rule ids with line numbers, e.g. `import:os@3`. Never source text. */
+  violations: string[];
+  duration_ms: number;
+  /** True only for synthetic runs; real output never goes to the model. */
+  llm_safe: boolean;
+  created_at: string;
+};
+
+export type TNmbExecuteBody = { code: string; target: TNmbRunTarget };
+
+export type TNmbAnalysisLimits = {
+  max_code_chars: number;
+  timeout_s: number;
+  max_output_bytes: number;
+  allowed_imports: string[];
+  max_upload_bytes: number;
+  synthetic_max_rows: number;
 };
