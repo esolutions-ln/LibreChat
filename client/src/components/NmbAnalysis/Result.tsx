@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Button } from '@librechat/client';
 import { dataService } from 'librechat-data-provider';
 import type { TNmbRun, TNmbRunStatus } from 'librechat-data-provider';
-import { useLocalize } from '~/hooks';
 import { parseViolation } from './prompt';
+import { useLocalize } from '~/hooks';
+import Charts from './Charts';
 import { cn } from '~/utils';
 
 const STATUS_KEYS = {
@@ -98,6 +99,7 @@ export default function Result({ run }: { run: TNmbRun }) {
       )}
       <Output label={localize('com_nmb_analysis_stdout')} text={run.stdout} />
       <Output label={localize('com_nmb_analysis_stderr')} text={run.stderr} />
+      <Charts run={run} />
       {run.files.length > 0 && (
         <section className="flex flex-col gap-1">
           <h4 className="text-text-secondary text-xs font-medium">

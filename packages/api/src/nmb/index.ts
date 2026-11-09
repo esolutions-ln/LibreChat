@@ -9,3 +9,5 @@ export * from './blocklist';
 export * from './handlers';
 export * from './analysis';
 export * from './analyst';
+export * from './chart';
+export * from './reports';

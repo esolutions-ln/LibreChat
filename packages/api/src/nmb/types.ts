@@ -92,6 +92,12 @@ export interface NmbConfig {
   /** Scanner has the `regexes` blocklist extension (not in INTERFACE.md yet). */
   regexBlocklist: boolean;
   analysis: NmbAnalysisConfig;
+  reports: NmbReportsConfig;
+}
+
+/** Inline charts and Excel/PDF export of model-written chart specs (docs/nmb/REPORTS.md). Off unless enabled. */
+export interface NmbReportsConfig {
+  enabled: boolean;
 }
 
 /** Synthetic-data analysis (docs/nmb/ANALYSIS.md). Off unless explicitly enabled. */

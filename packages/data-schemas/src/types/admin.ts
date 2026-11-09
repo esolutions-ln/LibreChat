@@ -1330,6 +1330,8 @@ export const AUDIT_ACTIONS = [
   'nmb_analysis.synthesized',
   'nmb_analysis.executed',
   'nmb_analysis.dataset_deleted',
+  /** NMB chart export (docs/nmb/REPORTS.md); target `{ type: 'nmb_report' }`. Format and counts only. */
+  'nmb_report.exported',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -1384,6 +1386,7 @@ export const AUDIT_ACTION_CATEGORY: Record<AuditAction, AuditCategory> = {
   'nmb_analysis.synthesized': 'tool_call',
   'nmb_analysis.executed': 'tool_call',
   'nmb_analysis.dataset_deleted': 'tool_call',
+  'nmb_report.exported': 'tool_call',
 };
 
 /** Result of the audited operation. Kept first-class instead of being encoded

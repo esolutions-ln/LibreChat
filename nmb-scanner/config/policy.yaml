@@ -44,6 +44,11 @@ unmask:
 review:
   reviewer_roles: [reviewer, admin]
 
+# Chart export to Excel/PDF (docs/nmb/REPORTS.md). Omitted keys fall back to app/policy.py defaults.
+reports:
+  enabled: true
+  max_spec_bytes: 65536
+
 # Synthetic-data analysis (docs/nmb/ANALYSIS.md). Omitted keys fall back to app/policy.py defaults.
 analysis:
   enabled: true
@@ -56,6 +61,8 @@ analysis:
   max_output_bytes: 200000       # captured stdout/stderr
   max_output_file_bytes: 5242880
   max_output_files: 20
+  max_charts: 5                  # save_chart() calls per run
+  max_chart_bytes: 65536         # one chart spec
   max_concurrent_runs: 2
   synthetic_max_rows: 1000
   synthetic_min_category_count: 5

@@ -20,6 +20,9 @@ synthetic twin, and the code it writes runs on the real data inside our boundary
  results retained encrypted for the owner only; NEVER fed back to the model
 ```
 
+Analysis code can also draw a chart with the sandbox helper `save_chart(spec, name)`; the chart shows inline and exports to
+Excel/PDF (`REPORTS.md`, "Workbench charts"). Enable with `NMB_REPORTS_ENABLED=true`.
+
 ## Guarantees
 - Real rows are stored Fernet-encrypted in the scanner volume. No endpoint returns them. Only sandbox runs read them.
 - Output of a `real` run is returned to the owning user's browser only (`llm_safe: false`). It is never inserted into a

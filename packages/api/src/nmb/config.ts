@@ -50,6 +50,7 @@ export function loadNmbConfig(env: NodeJS.ProcessEnv = process.env): NmbConfig {
       executeRateWindowMinutes: positiveInt(env.NMB_ANALYSIS_EXECUTE_WINDOW_MINUTES, 15),
       maxConcurrentRuns: positiveInt(env.NMB_ANALYSIS_MAX_CONCURRENT_RUNS, 2),
     },
+    reports: { enabled: isTrue(env.NMB_REPORTS_ENABLED) },
   };
 }
 

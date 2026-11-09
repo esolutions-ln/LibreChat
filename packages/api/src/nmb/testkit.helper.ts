@@ -22,6 +22,7 @@ export const baseConfig: NmbConfig = {
     executeRateWindowMinutes: 15,
     maxConcurrentRuns: 2,
   },
+  reports: { enabled: false },
 };
 
 export function scanResult(over: Partial<ScanResult> = {}): ScanResult {

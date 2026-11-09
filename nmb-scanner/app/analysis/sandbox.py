@@ -4,6 +4,9 @@ Defence in depth, not a security boundary on its own: (1) AST allow-list, (2) ch
 self-applied rlimits, wall-clock timeout, own session, (3) a PEP 578 audit hook in the child that blocks
 sockets, process creation and any file access outside the run directory and the Python/system library
 roots. Deploy the scanner on a network-less (`internal`) network with a memory limit as well.
+
+The harness injects three globals for user code: DATA_PATH, OUTPUT_DIR and `save_chart(spec, name="chart")`, which
+writes a ChartSpec to OUTPUT_DIR/<name>.chart.json without the code needing open() or os (see charts.py).
 """
 from __future__ import annotations
 
@@ -20,6 +23,8 @@ import threading
 import time
 from pathlib import Path
 
+from . import charts
+
 FORBIDDEN_BUILTINS = {"open", "eval", "exec", "compile", "__import__", "input", "breakpoint", "globals",
                       "locals", "vars", "getattr", "setattr", "delattr", "memoryview"}
 FORBIDDEN_ATTRS = {"eval", "exec", "query", "system", "popen", "read_pickle", "to_pickle", "read_clipboard",
@@ -29,6 +34,11 @@ FORBIDDEN_ATTRS = {"eval", "exec", "query", "system", "popen", "read_pickle", "t
 OUT_EXT = {".csv": "csv", ".json": "json", ".html": "html", ".png": "png", ".txt": "txt"}
 _FILE_NAME = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}$")
 _PATH = re.compile(r"(?:/[\w.+@=-]+){2,}")
+
+
+def kind_of(name: str) -> str:
+    """The run-file kind reported to clients: `chart` for `*.chart.json`, otherwise by extension."""
+    return "chart" if charts.is_chart(name) else OUT_EXT[os.path.splitext(name)[1].lower()]
 
 
 def validate(code: str, allowed_imports: list[str]) -> list[str]:
@@ -62,7 +72,15 @@ def validate(code: str, allowed_imports: list[str]) -> list[str]:
 
 # Runs inside the child. Keep it self-contained (the child is `python -I harness.py ...`).
 _HARNESS = r'''
-import json, os, sys, traceback
+import json, os, re, sys, traceback
+
+_CHART_NAME = re.compile(r"[A-Za-z0-9_-]{1,40}")
+
+def _plain(o):
+    # numpy/pandas scalars and arrays serialise through tolist(); anything else is a clear error
+    if hasattr(o, "tolist"):
+        return o.tolist()
+    raise TypeError("save_chart: spec contains a value that is not plain data")
 
 def main():
     data_path, out_dir, code_path, workdir, cfg = sys.argv[1:6]
@@ -129,7 +147,22 @@ def main():
             if p is not None and not (inside(p, [W]) or inside(p, R)):
                 raise PermissionError("blocked by sandbox policy")
     sys.addaudithook(hook)
-    g = {"__name__": "__main__", "DATA_PATH": data_path, "OUTPUT_DIR": out_dir}
+    saved = {"n": 0}
+    def save_chart(spec, name="chart"):
+        """Writes OUTPUT_DIR/<name>.chart.json. The scanner validates it as a ChartSpec after the run."""
+        if not isinstance(spec, dict):
+            raise ValueError("save_chart: spec must be a dict")
+        if not isinstance(name, str) or not _CHART_NAME.fullmatch(name):
+            raise ValueError("save_chart: name must match [A-Za-z0-9_-]{1,40}")
+        if saved["n"] >= cfg["max_charts"]:
+            raise ValueError("save_chart: at most %d charts per run" % cfg["max_charts"])
+        text = json.dumps(spec, default=_plain)
+        if len(text.encode("utf-8")) > cfg["max_chart_bytes"]:
+            raise ValueError("save_chart: spec is larger than %d bytes" % cfg["max_chart_bytes"])
+        with open(os.path.join(out_dir, name + ".chart.json"), "w", encoding="utf-8") as f:
+            f.write(text)
+        saved["n"] += 1
+    g = {"__name__": "__main__", "DATA_PATH": data_path, "OUTPUT_DIR": out_dir, "save_chart": save_chart}
     try:
         exec(code, g)
     except SystemExit:
@@ -197,7 +230,9 @@ def run(code: str, csv_bytes: bytes, limits: dict) -> dict:
         (work / "harness.py").write_text(_HARNESS, encoding="utf-8")
         timeout = float(limits["timeout_s"])
         cfg = {"cpu_s": int(timeout) + 2, "memory_bytes": int(limits["memory_mb"]) * 1024 * 1024,
-               "fsize_bytes": int(limits["max_output_file_bytes"])}
+               "fsize_bytes": int(limits["max_output_file_bytes"]),
+               "max_charts": int(limits.get("max_charts", 5)),
+               "max_chart_bytes": int(limits.get("max_chart_bytes", 65_536))}
         env = {"PATH": "/usr/bin:/bin", "HOME": str(work), "TMPDIR": str(work / "tmp"),
                "MPLCONFIGDIR": str(work / "mpl"), "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0",
                "PYTHONDONTWRITEBYTECODE": "1", "OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1",
@@ -235,6 +270,11 @@ def run(code: str, csv_bytes: bytes, limits: dict) -> dict:
                 stderr = (stderr + f"\nProcess terminated by signal {-rc} (resource limit).").strip()
         # Failed runs (limits can leave truncated files) return no files.
         files = _collect(out_dir, limits) if status == "ok" else {}
+        if files:
+            files, rejected = charts.finalize(files, int(limits.get("max_charts", 5)),
+                                              int(limits.get("max_chart_bytes", 65_536)))
+            if rejected:
+                stderr = (stderr + "\n" + "\n".join(rejected)).strip()
         return {"status": status, "stdout": stdout, "stderr": stderr, "files": files,
                 "duration_ms": int((time.monotonic() - started) * 1000)}
     finally:

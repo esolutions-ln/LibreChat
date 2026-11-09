@@ -3,6 +3,8 @@ const {
   createScannerCall,
   createScannerClient,
   createAnalysisClient,
+  createReportClient,
+  createReportHandlers,
   createNmbChatGateway,
   createNmbUploadGate,
   createNmbHandlers,
@@ -49,14 +51,14 @@ function getNmb() {
   }
   const config = loadNmbConfig(process.env);
   const scanner = createScannerClient(config);
-  const analysis = createAnalysisClient(
-    createScannerCall(config),
-    config.analysis.executeTimeoutMs,
-  );
+  const scannerCall = createScannerCall(config);
+  const analysis = createAnalysisClient(scannerCall, config.analysis.executeTimeoutMs);
+  const reports = createReportClient(scannerCall);
   instance = {
     config,
     scanner,
     analysisHandlers: createAnalysisHandlers({ config, analysis, recordAudit }),
+    reportHandlers: createReportHandlers({ config, reports, recordAudit }),
     chatGateway: createNmbChatGateway({ config, scanner, getFiles: getFilesForUser }),
     uploadGate: createNmbUploadGate({
       config,

@@ -17,7 +17,7 @@ from .store import AnalysisStore, iso, utcnow
 
 log = logging.getLogger("nmb.analysis")
 MEDIA = {"csv": "text/csv", "json": "application/json", "html": "text/html", "png": "image/png",
-         "txt": "text/plain"}
+         "txt": "text/plain", "chart": "application/json"}
 
 
 class SynthIn(BaseModel):
@@ -180,7 +180,7 @@ def build_router(get_scanner: Callable) -> APIRouter:
         files = result.pop("files")
         run = svc.store.create_run({**base, **result,
                                     "files": [{"name": n, "bytes": len(b),
-                                               "kind": sandbox.OUT_EXT[os.path.splitext(n)[1].lower()]}
+                                               "kind": sandbox.kind_of(n)}
                                               for n, b in files.items()]}, body.user, files)
         log.info("run finished id=%s dataset=%s target=%s status=%s files=%d ms=%d", run["id"], ds_id,
                  body.target, run["status"], len(files), run["duration_ms"])

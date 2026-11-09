@@ -16,6 +16,8 @@ import type {
   TNmbSynthesizeBody,
   TNmbSyntheticData,
   TNmbAnalysisLimits,
+  TNmbChartSpec,
+  TNmbReportFormat,
 } from './types/nmb';
 import type {
   TTracePage,
@@ -116,6 +118,8 @@ export const downloadNmbRunFile = async (id: string, name: string): Promise<Blob
 };
 export const getNmbAnalysisLimits = (): Promise<TNmbAnalysisLimits> =>
   request.get(endpoints.nmbAnalysisLimits());
+export const exportNmbReport = (format: TNmbReportFormat, spec: TNmbChartSpec): Promise<Blob> =>
+  request.post(endpoints.nmbReportExport(), { format, spec }, { responseType: 'blob' });
 
 export function getConversationTraceAvailability(
   conversationId: string,

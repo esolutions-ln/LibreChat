@@ -19,6 +19,8 @@ ANALYSIS_DEFAULTS: dict = {
     "max_output_bytes": 200_000,
     "max_output_file_bytes": 5_242_880,
     "max_output_files": 20,
+    "max_charts": 5,               # save_chart() calls per run (docs/nmb/REPORTS.md)
+    "max_chart_bytes": 65_536,     # one chart spec
     "max_concurrent_runs": 2,
     "synthetic_max_rows": 1000,
     "synthetic_min_category_count": 5,
@@ -26,6 +28,12 @@ ANALYSIS_DEFAULTS: dict = {
     "run_ttl_hours": 72,
     "allowed_imports": ["pandas", "numpy", "math", "statistics", "datetime", "json", "re", "collections",
                         "itertools", "decimal", "matplotlib", "plotly"],
+}
+
+
+REPORTS_DEFAULTS: dict = {
+    "enabled": True,
+    "max_spec_bytes": 65_536,  # docs/nmb/REPORTS.md: a chart spec is at most 64 KB
 }
 
 
@@ -39,6 +47,7 @@ class Policy:
         self.departments: dict = data.get("departments", {})
         self.files: dict = data.get("files", {})
         self.analysis: dict = {**ANALYSIS_DEFAULTS, **(data.get("analysis") or {})}
+        self.reports: dict = {**REPORTS_DEFAULTS, **(data.get("reports") or {})}
         self.unmask_roles = set(data.get("unmask", {}).get("allowed_roles", []))
         self.reviewer_roles = set(data.get("review", {}).get("reviewer_roles", ["reviewer", "admin"]))
         for name, cfg in self._all_entity_cfgs():

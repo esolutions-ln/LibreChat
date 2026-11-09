@@ -9,6 +9,8 @@ export type TNmbMe = {
   regexBlocklist: boolean;
   /** Synthetic-data analysis is available. */
   analysis?: boolean;
+  /** Inline charts and Excel/PDF export of financial results are available. */
+  reports?: boolean;
 };
 
 /** One finding as shown to a reviewer. Never contains the raw value. */
@@ -83,11 +85,163 @@ export const NMB_MASK_NOTE = `${NMB_MASK_NOTE_MARKER} tokens such as <TYPE_000> 
 /** Matches a placeholder the scanner emits, e.g. `<ACCOUNT_001>`. */
 export const NMB_PLACEHOLDER_REGEX = /<[A-Z][A-Z_]*_\d{3,}>/;
 
-/** The text without the gateway's trailing note. */
+/** Start of the note that tells the model how to answer with an `nmb-chart` block. */
+export const NMB_CHART_NOTE_MARKER = '\n\n[NMB chart note:';
+
+/** The text without the gateway's trailing note(s): cut at the earliest marker present. */
 export const stripNmbMaskNote = (text: string): string => {
-  const i = text.indexOf(NMB_MASK_NOTE_MARKER);
-  return i === -1 ? text : text.slice(0, i);
+  const cuts = [NMB_MASK_NOTE_MARKER, NMB_CHART_NOTE_MARKER]
+    .map((marker) => text.indexOf(marker))
+    .filter((i) => i !== -1);
+  return cuts.length === 0 ? text : text.slice(0, Math.min(...cuts));
 };
+
+/** Financial-results charts (docs/nmb/REPORTS.md). */
+export type TNmbChartType = 'bar' | 'stacked_bar' | 'line' | 'pie';
+
+export type TNmbChartSeries = { name: string; values: Array<number | null> };
+
+/** Where the figures came from: read by the AI from a document, or computed by analysis code. */
+export type TNmbChartOrigin = 'model' | 'computed';
+
+export type TNmbChartSpec = {
+  version: 1;
+  title: string;
+  type: TNmbChartType;
+  origin?: TNmbChartOrigin;
+  unit?: string;
+  source?: string;
+  categories: string[];
+  series: TNmbChartSeries[];
+};
+
+export type TNmbReportFormat = 'xlsx' | 'pdf';
+
+export type TNmbChartError =
+  | 'invalid_json'
+  | 'too_large'
+  | 'invalid_shape'
+  | 'unsupported_version'
+  | 'invalid_type'
+  | 'invalid_text'
+  | 'too_many_categories'
+  | 'too_many_series'
+  | 'length_mismatch'
+  | 'invalid_value'
+  | 'negative_pie';
+
+export type TNmbChartParse =
+  | { ok: true; spec: TNmbChartSpec }
+  | { ok: false; error: TNmbChartError };
+
+export const NMB_CHART_LIMITS = {
+  maxBytes: 64 * 1024,
+  maxTitle: 120,
+  maxNote: 120,
+  maxName: 80,
+  maxCategories: 60,
+  maxSeries: 12,
+} as const;
+
+const CHART_TYPES = new Set<string>(['bar', 'stacked_bar', 'line', 'pie']);
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARS = /[\u0000-\u001f\u007f-\u009f]/;
+
+const utf8Length = (s: string): number =>
+  typeof TextEncoder === 'undefined' ? s.length : new TextEncoder().encode(s).length;
+
+const isText = (v: unknown, max: number, required: boolean): v is string =>
+  typeof v === 'string' &&
+  v.length <= max &&
+  (!required || v.trim().length > 0) &&
+  !CONTROL_CHARS.test(v);
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  v != null && typeof v === 'object' && !Array.isArray(v);
+
+const fail = (error: TNmbChartError): TNmbChartParse => ({ ok: false, error });
+
+/**
+ * Validates the JSON of an `nmb-chart` block against every limit in the contract. Pure and
+ * non-throwing: partial JSON (a block still streaming) is simply `invalid_json`.
+ */
+export function parseNmbChartSpec(json: string): TNmbChartParse {
+  const { maxBytes, maxTitle, maxNote, maxName, maxCategories, maxSeries } = NMB_CHART_LIMITS;
+  if (utf8Length(json) > maxBytes) {
+    return fail('too_large');
+  }
+  let raw: unknown;
+  try {
+    raw = JSON.parse(json);
+  } catch {
+    return fail('invalid_json');
+  }
+  if (!isRecord(raw)) {
+    return fail('invalid_shape');
+  }
+  if (raw.version !== 1) {
+    return fail('unsupported_version');
+  }
+  if (typeof raw.type !== 'string' || !CHART_TYPES.has(raw.type)) {
+    return fail('invalid_type');
+  }
+  const type = raw.type as TNmbChartType;
+  if (raw.origin !== undefined && raw.origin !== 'model' && raw.origin !== 'computed') {
+    return fail('invalid_type');
+  }
+  if (!isText(raw.title, maxTitle, true)) {
+    return fail('invalid_text');
+  }
+  for (const key of ['unit', 'source'] as const) {
+    if (raw[key] !== undefined && !isText(raw[key], maxNote, false)) {
+      return fail('invalid_text');
+    }
+  }
+  if (!Array.isArray(raw.categories) || !Array.isArray(raw.series)) {
+    return fail('invalid_shape');
+  }
+  if (raw.categories.length < 1 || raw.categories.length > maxCategories) {
+    return fail('too_many_categories');
+  }
+  if (raw.series.length < 1 || raw.series.length > maxSeries) {
+    return fail('too_many_series');
+  }
+  if (!raw.categories.every((c) => isText(c, maxName, true))) {
+    return fail('invalid_text');
+  }
+  const categories = raw.categories as string[];
+  const series: TNmbChartSeries[] = [];
+  for (const s of raw.series as unknown[]) {
+    if (!isRecord(s) || !isText(s.name, maxName, true) || !Array.isArray(s.values)) {
+      return fail(isRecord(s) && Array.isArray(s.values) ? 'invalid_text' : 'invalid_shape');
+    }
+    if (s.values.length !== categories.length) {
+      return fail('length_mismatch');
+    }
+    for (const v of s.values) {
+      if (v !== null && (typeof v !== 'number' || !Number.isFinite(v))) {
+        return fail('invalid_value');
+      }
+      if (type === 'pie' && typeof v === 'number' && v < 0) {
+        return fail('negative_pie');
+      }
+    }
+    series.push({ name: s.name, values: s.values as Array<number | null> });
+  }
+  return {
+    ok: true,
+    spec: {
+      version: 1,
+      title: raw.title,
+      type,
+      ...(raw.origin === 'model' || raw.origin === 'computed' ? { origin: raw.origin } : {}),
+      ...(typeof raw.unit === 'string' && raw.unit ? { unit: raw.unit } : {}),
+      ...(typeof raw.source === 'string' && raw.source ? { source: raw.source } : {}),
+      categories,
+      series,
+    },
+  };
+}
 
 /** Synthetic-data analysis (`/api/nmb/datasets`, `/api/nmb/runs`). */
 export type TNmbColumnKind =

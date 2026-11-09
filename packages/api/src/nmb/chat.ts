@@ -17,6 +17,11 @@ export const CLEARED_SUFFIX = '.masked.md';
 
 export const MASK_NOTE: string = NMB_MASK_NOTE;
 
+/** Appended to model-bound text, like the redaction note, and stripped from display by the same helper. */
+export const CHART_NOTE_MARKER = '\n\n[NMB chart note:';
+export const CHART_NOTE: string = `${CHART_NOTE_MARKER} to show a chart, add a fenced code block whose language is nmb-chart containing one JSON object: {"version":1,"title":string,"type":"bar"|"stacked_bar"|"line"|"pie","unit":string,"categories":string[],"series":[{"name":string,"values":(number|null)[]}]}. Use only numbers that appear in the provided material, one value per category (null when missing), at most 60 categories and 12 series. The app renders the chart and offers Excel and PDF export.]`;
+const CHART_WORDS = /\b(chart|graph|plot|visuali[sz]\w*|dashboard|diagram)\b/i;
+
 export type NmbErrorType =
   | 'nmb_review_pending'
   | 'nmb_rejected'
@@ -304,6 +309,9 @@ export function createNmbChatGateway(deps: NmbChatDeps): RequestHandler {
             config.maskNote && PLACEHOLDER_RE.test(out.content)
               ? out.content + MASK_NOTE
               : out.content;
+          if (config.reports.enabled && CHART_WORDS.test(out.content)) {
+            body.text = `${body.text as string}${CHART_NOTE}`;
+          }
           const rest = collectTargets(body, true);
           const results = await Promise.all(
             rest.map((t) => screenText(scanner, t.get(), identity.ctx)),
@@ -324,6 +332,7 @@ export function createNmbChatGateway(deps: NmbChatDeps): RequestHandler {
         }
       }
 
+      const hasFiles = kind === 'text' && Array.isArray(body.files) && body.files.length > 0;
       let targets: Target[];
       if (kind === 'resume') {
         const t = collectAnswerTargets(body.answers);
@@ -356,9 +365,16 @@ export function createNmbChatGateway(deps: NmbChatDeps): RequestHandler {
         }
         anyMasked = anyMasked || r.masked;
         const carriesTokens = r.masked || PLACEHOLDER_RE.test(r.content);
-        t.set(
-          carriesTokens && t.isMessageText && config.maskNote ? r.content + MASK_NOTE : r.content,
-        );
+        let out = r.content;
+        if (t.isMessageText) {
+          if (carriesTokens && config.maskNote) {
+            out += MASK_NOTE;
+          }
+          if (config.reports.enabled && (hasFiles || CHART_WORDS.test(r.content))) {
+            out += CHART_NOTE;
+          }
+        }
+        t.set(out);
       });
       if (anyMasked) {
         res.setHeader('X-NMB-Masked', '1');

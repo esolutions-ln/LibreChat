@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from .config import Settings
 from .analysis import build_router
+from .report import build_router as build_report_router
 from .engine import Ctx, Scanner
 
 logging.basicConfig(level=os.environ.get("NMB_LOG_LEVEL", "INFO"),
@@ -31,6 +32,7 @@ def auth(x_nmb_service_key: str | None = Header(default=None), sc: Scanner = Dep
 
 app = FastAPI(title="NMB Scanner", version="1.0.0", dependencies=[Depends(auth)])
 app.include_router(build_router(get_scanner))
+app.include_router(build_report_router(get_scanner))
 
 
 class ScanTextIn(BaseModel):

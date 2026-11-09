@@ -569,15 +569,18 @@ export const nmbReviewReject = (id: string) => `${nmbReview(id)}/reject`;
 export const nmbBlocklist = () => `${nmb()}/blocklist`;
 export const nmbSubmission = (id: string) => `${nmb()}/submissions/${encodeURIComponent(id)}`;
 export const nmbUnmask = () => `${nmb()}/unmask`;
-export const nmbDatasets = () => `${nmb()}/datasets`;
+/** Analysis routes live under `/api/nmb/analysis`; report export under `/api/nmb/reports`. */
+export const nmbAnalysis = () => `${nmb()}/analysis`;
+export const nmbReportExport = () => `${nmb()}/reports/export`;
+export const nmbDatasets = () => `${nmbAnalysis()}/datasets`;
 export const nmbDataset = (id: string) => `${nmbDatasets()}/${encodeURIComponent(id)}`;
 export const nmbDatasetSynthesize = (id: string) => `${nmbDataset(id)}/synthesize`;
 export const nmbDatasetSynthetic = (id: string) => `${nmbDataset(id)}/synthetic`;
 export const nmbDatasetExecute = (id: string) => `${nmbDataset(id)}/execute`;
-export const nmbRun = (id: string) => `${nmb()}/runs/${encodeURIComponent(id)}`;
+export const nmbRun = (id: string) => `${nmbAnalysis()}/runs/${encodeURIComponent(id)}`;
 export const nmbRunFile = (id: string, name: string) =>
   `${nmbRun(id)}/files/${encodeURIComponent(name)}`;
-export const nmbAnalysisLimits = () => `${nmb()}/limits`;
+export const nmbAnalysisLimits = () => `${nmbAnalysis()}/limits`;
 
 /* Conversation traces */
 export const conversationTrace = (conversationId: string) =>

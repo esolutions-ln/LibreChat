@@ -59,23 +59,34 @@ class RegexRecognizer(EntityRecognizer):
 
     def __init__(self, entity: str, patterns: list[tuple[str, float]], group: int = 0,
                  validator: Validator | None = None, context: list[str] | None = None,
-                 boosted: float | None = None, flags=0, window: int = 40, name: str | None = None):
+                 boosted: float | None = None, flags=0, window: int = 40, name: str | None = None,
+                 soft_context: list[str] | None = None):
         super().__init__(supported_entities=[entity], supported_language="en",
                          name=name or f"nmb_{entity.lower()}")
         self.entity = entity
         self.patterns = [(re.compile(p, flags), s) for p, s in patterns]
         self.group, self.validator = group, validator
         self.context = [c.lower() for c in (context or [])]
+        # Stricter context (regexes) used instead of `context` when the validator returns a score,
+        # i.e. for values that only resemble the entity (such as thousands-grouped figures).
+        self.soft_context = None if soft_context is None else [re.compile(p, re.I) for p in soft_context]
         self.boosted, self.window = boosted, window
 
     def load(self):  # pragma: no cover
         pass
 
+    def _before(self, text: str, start: int) -> str:
+        return text[max(0, start - self.window):start].lower()
+
     def _has_context(self, text: str, start: int) -> bool:
         if not self.context:
             return False
-        before = text[max(0, start - self.window):start].lower()
+        before = self._before(text, start)
         return any(c in before for c in self.context)
+
+    def _has_soft_context(self, text: str, start: int) -> bool:
+        before = self._before(text, start)
+        return any(rx.search(before) for rx in self.soft_context or [])
 
     def analyze(self, text, entities=None, nlp_artifacts=None):
         out = []
@@ -86,13 +97,15 @@ class RegexRecognizer(EntityRecognizer):
                     continue
                 val = text[s:e]
                 sc = score
+                soft = False
                 if self.validator:
                     r = self.validator(val)
                     if r is False:
                         continue
                     if isinstance(r, float):
                         sc = r
-                if self.boosted and self._has_context(text, s):
+                        soft = self.soft_context is not None
+                if self.boosted and (self._has_soft_context(text, s) if soft else self._has_context(text, s)):
                     sc = max(sc, self.boosted)
                 out.append(RecognizerResult(self.entity, s, e, sc, recognition_metadata=_meta(self)))
         return out
@@ -170,9 +183,21 @@ def _digits(s: str) -> str:
     return re.sub(r"\D", "", s)
 
 
+_THOUSANDS = re.compile(r"\d{1,3}(?:[ ,]\d{3})+")
+# Labels that make a thousands-shaped number an account number (e.g. "Account number: 123 456 789 012")
+# while leaving "accounts receivable | 1 234 567 890" alone.
+_ACCOUNT_LABELS = [r"\baccount\s*(?:no\b|num\b|number|#)", r"\bacc(?:t|ount)?\.?\s*(?:no\b|num\b|#)",
+                   r"\ba/c\b", r"\biban\b", r"\bbeneficiary\s+account"]
+
+
+def _thousands_grouped(v: str) -> bool:
+    """True for figures written with thousands separators: `1 234 567 890`, `12,345,678,901`."""
+    return _THOUSANDS.fullmatch(v) is not None
+
+
 def _card_validator(v: str):
     d = _digits(v)
-    return luhn_ok(d) and len(v) - len(d) <= 6
+    return luhn_ok(d) and len(v) - len(d) <= 6 and not _thousands_grouped(v)
 
 
 def _swift_validator(v: str):
@@ -192,7 +217,11 @@ def _bare_account_validator(v: str):
     d = _digits(v)
     if luhn_ok(d):
         return False  # a Luhn-valid 13-19 digit run is a card; the card recogniser owns it
-    return 10 <= len(d) <= 16
+    if not 10 <= len(d) <= 16:
+        return False
+    if _thousands_grouped(v):
+        return 0.2  # a financial figure: below min_score unless an explicit account label precedes it
+    return True
 
 
 def build_static_recognizers() -> list[EntityRecognizer]:
@@ -200,7 +229,7 @@ def build_static_recognizers() -> list[EntityRecognizer]:
     return [
         RegexRecognizer(
             "ACCOUNT_NUMBER", [(r"(?<![\w.])\d(?:[ -]?\d){8,17}(?![\w])", 0.45)],
-            validator=_bare_account_validator, context=ctx_acct, boosted=0.9),
+            validator=_bare_account_validator, context=ctx_acct, boosted=0.9, soft_context=_ACCOUNT_LABELS),
         RegexRecognizer(
             "SWIFT_BIC", [(r"\b[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b", 0.30)],
             validator=_swift_validator, context=["swift", "bic", "sort code", "correspondent"], boosted=0.9),

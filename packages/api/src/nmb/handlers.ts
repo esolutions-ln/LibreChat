@@ -223,6 +223,7 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
         reviewer,
         regexBlocklist: config.regexBlocklist,
         analysis: config.enabled && config.analysis.enabled,
+        reports: config.enabled && config.reports.enabled,
       });
     }) as RequestHandler,
 

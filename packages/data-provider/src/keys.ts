@@ -43,6 +43,7 @@ export enum QueryKeys {
   nmbDataset = 'nmbDataset',
   nmbSynthetic = 'nmbSynthetic',
   nmbRun = 'nmbRun',
+  nmbRunChart = 'nmbRunChart',
   nmbAnalysisLimits = 'nmbAnalysisLimits',
   assistants = 'assistants',
   assistant = 'assistant',

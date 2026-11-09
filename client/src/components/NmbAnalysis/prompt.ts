@@ -46,6 +46,11 @@ export function buildAnalysisPrompt(input: PromptInput): string {
       '- Read the data with pd.read_csv(DATA_PATH). Do not hard-code any other path.',
       '- Write results only under OUTPUT_DIR (.csv, .json, .html, .png or .txt files).',
       '- Print short summaries with print().',
+      '- To draw a chart, call save_chart(spec, name). It is provided; do not import it. spec is a ' +
+        'dict: {"version": 1, "title": str, "type": "bar" | "stacked_bar" | "line" | "pie", ' +
+        '"unit": str, "categories": [str], "series": [{"name": str, "values": [number or None]}]}. ' +
+        'name is letters, digits, _ or - (up to 40 characters). Pass aggregated values only, at ' +
+        'most 60 categories, 12 series and 5 charts. Do not also print the same numbers.',
       `- Only import: ${imports.join(', ')}.`,
       '- Do not use the network, subprocess, os, sys, pathlib, shutil, open(), eval, exec, ' +
         'compile, __import__ or dunder attributes.',

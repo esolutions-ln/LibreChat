@@ -71,4 +71,16 @@ analysis.get('/runs/:id', a('getRun'));
 analysis.get('/runs/:id/files/:name', a('getRunFile'));
 router.use('/analysis', analysis);
 
+/** Excel/PDF export of model-written chart specs. The handlers 404 unless `NMB_REPORTS_ENABLED` is on. */
+const rep = (name) => (req, res, next) => getNmb().reportHandlers[name](req, res, next);
+let exportLimiter;
+const limitExport = (req, res, next) => {
+  exportLimiter ??= createAnalysisExecuteLimiter(getNmb().config.analysis, {
+    name: 'nmb_report_export_limiter',
+    message: 'Too many exports. Try again later.',
+  });
+  return exportLimiter(req, res, next);
+};
+router.post('/reports/export', rep('gate'), limitExport, rep('exportReport'));
+
 module.exports = router;

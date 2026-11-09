@@ -13,6 +13,7 @@ import { useMessagePartsHost } from '~/Providers/MessagePartsHostContext';
 import { useCodeBlockContext, useMediaContext } from '~/Providers';
 import CodeBlock from '~/components/Messages/Content/CodeBlock';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
+import { NmbChart } from '~/components/NmbReports';
 import { useFileDownload } from '~/data-provider';
 import { useLocalize } from '~/hooks';
 
@@ -21,6 +22,16 @@ type TCodeProps = {
   className?: string;
   children: React.ReactNode;
 };
+
+/** `\w+` in the language regex stops at the hyphen, so the chart fence is matched on its own. */
+const isNmbChartFence = (className?: string): boolean =>
+  /(?:^|\s)language-nmb-chart(?:\s|$)/.test(className ?? '');
+
+/** The fence text; an array of string chunks is joined rather than comma-separated. */
+const fenceText = (children: React.ReactNode): string =>
+  Array.isArray(children)
+    ? children.map((c) => (typeof c === 'string' ? c : '')).join('')
+    : String(children ?? '');
 
 const isSingleLineCode = (children: React.ReactNode): boolean => {
   if (typeof children === 'string') {
@@ -66,6 +77,20 @@ export const code: React.ElementType = memo(function MarkdownCode({
         <Mermaid id={`mermaid-${mermaidIndex}`}>{content}</Mermaid>
       </MermaidErrorBoundary>
     );
+  } else if (isNmbChartFence(className)) {
+    return (
+      <NmbChart
+        code={fenceText(children)}
+        fallback={
+          <CodeBlock
+            lang="json"
+            codeChildren={children}
+            blockIndex={blockIndex}
+            allowExecution={false}
+          />
+        }
+      />
+    );
   } else if (isSingleLine) {
     return (
       <code onDoubleClick={handleDoubleClick} className={className}>
@@ -97,6 +122,13 @@ export const codeNoExecution: React.ElementType = memo(function MarkdownCodeNoEx
   } else if (lang === 'mermaid') {
     const content = typeof children === 'string' ? children : String(children);
     return <Mermaid>{content}</Mermaid>;
+  } else if (isNmbChartFence(className)) {
+    return (
+      <NmbChart
+        code={fenceText(children)}
+        fallback={<CodeBlock lang="json" codeChildren={children} allowExecution={false} />}
+      />
+    );
   } else if (isSingleLineCode(children)) {
     return (
       <code onDoubleClick={handleDoubleClick} className={className}>
