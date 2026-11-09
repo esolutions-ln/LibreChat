@@ -9,13 +9,13 @@ import { isNmbMisconfigured } from './config';
 import { resolveIdentity } from './identity';
 
 /** The sentinel the client submits after a review is approved. The server swaps in the approved content. */
-export const RELEASE_RE = /^\s*\[\[nmb:release:(rev_[0-9a-f]{12})\]\]\s*$/;
-export const PLACEHOLDER_RE = /<[A-Z][A-Z_]*_\d{3,}>/;
-export const REVIEW_ID_RE = /^rev_[0-9a-f]{12}$/;
+export const RELEASE_RE: RegExp = /^\s*\[\[nmb:release:(rev_[0-9a-f]{12})\]\]\s*$/;
+export const PLACEHOLDER_RE: RegExp = /<[A-Z][A-Z_]*_\d{3,}>/;
+export const REVIEW_ID_RE: RegExp = /^rev_[0-9a-f]{12}$/;
 /** Cleared uploads are always renamed to this suffix by the upload gate. */
 export const CLEARED_SUFFIX = '.masked.md';
 
-export const MASK_NOTE = NMB_MASK_NOTE;
+export const MASK_NOTE: string = NMB_MASK_NOTE;
 
 export type NmbErrorType =
   | 'nmb_review_pending'

@@ -38,4 +38,4 @@ export function resolveIdentity(req: Request, config: NmbConfig): GatewayIdentit
 }
 
 /** Scanner roles for a reviewer call. Authorisation is decided by LibreChat (capability); this only satisfies the scanner. */
-export const SCANNER_REVIEWER_ROLES = ['reviewer'];
+export const SCANNER_REVIEWER_ROLES: string[] = ['reviewer'];

@@ -65,7 +65,21 @@ function toPublic(item: ReviewItem & { original_prompt_ref?: unknown; result_ref
   return rest;
 }
 
-export function createNmbHandlers(deps: NmbHandlerDeps) {
+export interface NmbHandlers {
+  requireReviewer: RequestHandler;
+  me: RequestHandler;
+  mySubmission: RequestHandler;
+  unmask: RequestHandler;
+  listReviews: RequestHandler;
+  getReview: RequestHandler;
+  getOriginal: RequestHandler;
+  approve: RequestHandler;
+  reject: RequestHandler;
+  getBlocklist: RequestHandler;
+  addBlocklist: RequestHandler;
+}
+
+export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
   const { config, scanner } = deps;
 
   const actor = (req: Request) => {
