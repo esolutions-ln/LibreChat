@@ -8,7 +8,9 @@ let methods: ReturnType<typeof createNmbFileHoldMethods>;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
-  mongoose.models.NmbFileHold || mongoose.model('NmbFileHold', nmbFileHoldSchema);
+  if (!mongoose.models.NmbFileHold) {
+    mongoose.model('NmbFileHold', nmbFileHoldSchema);
+  }
   methods = createNmbFileHoldMethods(mongoose);
   await mongoose.connect(mongoServer.getUri());
 });
