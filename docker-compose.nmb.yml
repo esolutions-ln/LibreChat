@@ -38,6 +38,33 @@ services:
       timeout: 5s
       retries: 3
 
+  # Model-safe data tools over MCP (docs/nmb/MCP.md). Opt-in: docker compose --profile mcp up -d.
+  # Reachable only on the internal network; LibreChat connects with the bearer token and names the user.
+  nmb-mcp:
+    profiles: ["mcp"]
+    build:
+      context: ./nmb-mcp
+    container_name: nmb-mcp
+    restart: unless-stopped
+    environment:
+      NMB_SCANNER_URL: http://nmb-scanner:8088
+      NMB_SERVICE_KEY: ${NMB_SERVICE_KEY:?set NMB_SERVICE_KEY (shared secret with the scanner) in .env}
+      NMB_MCP_TOKEN: ${NMB_MCP_TOKEN:?set NMB_MCP_TOKEN (shared secret with the caller) in .env}
+      NMB_MCP_PUBLIC_URL: ${NMB_MCP_PUBLIC_URL:-}
+      NMB_MCP_MIN_GROUP: ${NMB_MCP_MIN_GROUP:-10}
+    expose:
+      - "8090"          # internal only: do NOT publish this port
+    networks:
+      - nmb-internal
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    mem_limit: 256m
+    pids_limit: 128
+    depends_on:
+      - nmb-scanner
+
   # LLM egress: LibreChat -> litellm -> provider. LiteLLM holds the provider key and is the only
   # service here with internet access; Presidio masks PII in each prompt before it leaves.
   # Point LibreChat at it with a custom endpoint (baseURL http://litellm:4000/v1,

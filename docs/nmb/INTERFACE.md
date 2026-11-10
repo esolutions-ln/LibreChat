@@ -11,6 +11,7 @@ session, not from client input.
 Synthetic-data analysis endpoints (`/analysis/*`) are specified in `docs/nmb/ANALYSIS.md`.
 Synthetic approval of held prompts (`mode` on approve, `synthetic` on `/unmask`, `released_at`) is in `docs/nmb/SYNTHETIC.md`.
 A step-by-step customer demo (PDF tables and CSV workbench) with fictitious data is in `docs/nmb/demo/DEMO.md`.
+The reference MCP server that exposes the workbench to a model without returning real rows is in `docs/nmb/MCP.md`.
 
 ## Conventions
 - Auth: header `X-NMB-Service-Key: <NMB_SERVICE_KEY>` on every request (401 if wrong/missing; disabled only if the env var is unset, dev only).
