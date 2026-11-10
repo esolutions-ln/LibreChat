@@ -1,0 +1,121 @@
+customer_id,full_name,email,phone,address,city,national_id,account_number,segment,product,balance_usd,opened_date,monthly_txn_count,days_in_arrears
+C1001,Tatenda Gumbo,tatenda.gumbo1@example.co.zw,+263 77 624 2681,114 Borrowdale Rd,Masvingo,63-921426-H-47,5219552373258,Retail,Current account,1727.79,2016-05-27,14,0
+C1002,Memory Gumbo,memory.gumbo2@example.co.zw,+263 77 357 6696,119 Jason Moyo St,Gweru,75-768695-B-31,6139091856412,Retail,Personal loan,1332.77,2025-12-23,75,0
+C1003,Nomsa Chigumba,nomsa.chigumba3@example.co.zw,+263 77 192 7533,115 Enterprise Rd,Masvingo,73-222104-G-42,9640939190334,Retail,Mortgage,2490.22,2019-07-19,63,15
+C1004,Tendai Mpofu,tendai.mpofu4@example.co.zw,+263 77 232 1800,91 Park Lane,Kwekwe,23-852151-G-40,9478877099580,Retail,Savings account,2321.06,2016-11-23,60,30
+C1005,Rumbidzai Nkomo,rumbidzai.nkomo5@example.co.zw,+263 77 785 6040,71 Park Lane,Kwekwe,71-943992-G-37,6176305457160,Retail,Personal loan,203.38,2017-11-20,60,60
+C1006,Memory Chigumba,memory.chigumba6@example.co.zw,+263 77 366 8955,60 Park Lane,Gweru,65-684935-A-28,9050128744615,Premium,Current account,34263.91,2023-05-15,25,90
+C1007,Memory Dube,memory.dube7@example.co.zw,+263 77 610 7064,13 Borrowdale Rd,Kwekwe,62-253468-H-10,1000395861254,SME,Mortgage,11867.65,2016-10-26,27,0
+C1008,Patience Ncube,patience.ncube8@example.co.zw,+263 77 374 6853,20 Samora Machel Ave,Mutare,72-823262-C-44,9320309119408,SME,Overdraft,3688.14,2024-12-17,39,0
+C1009,Chipo Chikwanha,chipo.chikwanha9@example.co.zw,+263 77 700 6013,65 Lobengula St,Gweru,29-645291-D-34,7846633711630,SME,Current account,2235.03,2020-11-12,5,0
+C1010,Memory Gumbo,memory.gumbo10@example.co.zw,+263 77 560 6341,117 Josiah Tongogara St,Gweru,69-699385-C-19,8628750914294,SME,Overdraft,7422.82,2024-04-22,10,15
+C1011,Rudo Hove,rudo.hove11@example.co.zw,+263 77 277 1741,83 Park Lane,Harare,67-891370-D-40,1360252480459,SME,Savings account,13050.87,2018-09-05,22,30
+C1012,Chipo Mapfumo,chipo.mapfumo12@example.co.zw,+263 77 645 7784,112 Josiah Tongogara St,Gweru,49-296292-F-21,9161569344431,Retail,Mortgage,2698.09,2021-05-15,24,0
+C1013,Memory Tshuma,memory.tshuma13@example.co.zw,+263 77 915 9596,102 Herbert Chitepo Ave,Harare,37-342572-A-15,8992412818018,Retail,Personal loan,1208.17,2025-03-01,47,60
+C1014,Nomsa Khumalo,nomsa.khumalo14@example.co.zw,+263 77 910 9820,28 Josiah Tongogara St,Masvingo,45-682798-D-46,3334554101760,SME,Current account,15524.03,2016-07-06,15,30
+C1015,Nomsa Mutasa,nomsa.mutasa15@example.co.zw,+263 77 208 9300,41 Herbert Chitepo Ave,Masvingo,18-405173-F-20,5506541071388,SME,Current account,1552.44,2019-07-01,9,0
+C1016,Tendai Banda,tendai.banda16@example.co.zw,+263 77 802 6739,41 Main Street,Masvingo,14-523824-F-48,8496705083389,Retail,Current account,1909.89,2023-11-09,51,0
+C1017,Nomsa Ncube,nomsa.ncube17@example.co.zw,+263 77 547 1387,37 Jason Moyo St,Mutare,25-411366-G-30,7025653531132,SME,Savings account,11507.7,2016-03-20,17,0
+C1018,Nyasha Zimunya,nyasha.zimunya18@example.co.zw,+263 77 763 5951,4 Lobengula St,Masvingo,26-473263-G-34,5210687935153,Retail,Mortgage,1849.73,2017-03-18,5,30
+C1019,Rumbidzai Khumalo,rumbidzai.khumalo19@example.co.zw,+263 77 361 3419,30 Samora Machel Ave,Harare,45-667436-H-36,3436598274985,Retail,Overdraft,405.41,2017-09-02,85,60
+C1020,Tafadzwa Nkomo,tafadzwa.nkomo20@example.co.zw,+263 77 632 6201,8 Samora Machel Ave,Kwekwe,41-593402-A-24,9949333775361,Retail,Savings account,2516.62,2021-12-12,31,15
+C1021,Simba Gumbo,simba.gumbo21@example.co.zw,+263 77 483 6883,59 Main Street,Masvingo,70-926937-E-22,3703297677430,SME,Mortgage,17567.12,2020-09-23,54,60
+C1022,Chipo Dube,chipo.dube22@example.co.zw,+263 77 659 5342,18 Josiah Tongogara St,Harare,78-327669-E-46,7693248154858,Retail,Overdraft,2607.12,2023-11-22,22,90
+C1023,Tatenda Dube,tatenda.dube23@example.co.zw,+263 77 498 6465,71 Herbert Chitepo Ave,Mutare,15-873146-D-20,6153526586361,Retail,Personal loan,1543.74,2020-03-13,26,90
+C1024,Tendai Phiri,tendai.phiri24@example.co.zw,+263 77 532 6827,104 Park Lane,Bulawayo,76-130946-C-30,3544936040711,SME,Savings account,1817.21,2016-09-22,84,60
+C1025,Nomsa Dube,nomsa.dube25@example.co.zw,+263 77 321 9718,20 Enterprise Rd,Masvingo,41-232670-B-30,2887571832901,Retail,Current account,1140.62,2024-05-21,17,0
+C1026,Memory Sibanda,memory.sibanda26@example.co.zw,+263 77 352 6876,88 Main Street,Masvingo,54-186559-B-15,9705075875034,Retail,Personal loan,848.57,2025-04-06,43,0
+C1027,Rumbidzai Gumbo,rumbidzai.gumbo27@example.co.zw,+263 77 841 9080,52 Jason Moyo St,Bulawayo,35-945548-H-24,7132868589199,Retail,Personal loan,1212.44,2024-07-07,21,0
+C1028,Collins Chikwanha,collins.chikwanha28@example.co.zw,+263 77 436 2930,41 Herbert Chitepo Ave,Gweru,43-252423-E-24,3167981044945,Retail,Personal loan,919.54,2022-11-13,53,0
+C1029,Thabo Zhou,thabo.zhou29@example.co.zw,+263 77 795 9104,117 Park Lane,Masvingo,36-545053-F-31,1185426492009,Retail,Personal loan,1588.48,2019-03-11,76,30
+C1030,Lindiwe Marufu,lindiwe.marufu30@example.co.zw,+263 77 594 6550,2 Samora Machel Ave,Bulawayo,25-792769-E-30,7500992077777,SME,Current account,11414.92,2018-09-25,3,90
+C1031,Nyasha Gumbo,nyasha.gumbo31@example.co.zw,+263 77 574 4381,78 Fife Avenue,Kwekwe,49-188376-G-43,3343158739275,Premium,Current account,6702.05,2021-01-06,72,30
+C1032,Kudzai Marufu,kudzai.marufu32@example.co.zw,+263 77 449 6628,45 Jason Moyo St,Masvingo,71-367753-H-30,5401649820012,SME,Current account,13013.47,2017-01-16,48,0
+C1033,Takudzwa Hove,takudzwa.hove33@example.co.zw,+263 77 624 7552,39 Borrowdale Rd,Masvingo,16-954526-G-14,6256430154872,Retail,Mortgage,1733.35,2023-09-20,43,0
+C1034,Thabo Chigumba,thabo.chigumba34@example.co.zw,+263 77 675 3856,98 Herbert Chitepo Ave,Masvingo,76-501424-B-48,4779483398923,Retail,Current account,1348.8,2018-07-17,69,0
+C1035,Blessing Nkomo,blessing.nkomo35@example.co.zw,+263 77 833 9004,18 Park Lane,Kwekwe,51-481415-G-44,4326620077148,SME,Savings account,12343.25,2017-12-05,18,60
+C1036,Collins Ncube,collins.ncube36@example.co.zw,+263 77 986 1565,36 Herbert Chitepo Ave,Bulawayo,27-380555-F-18,3961196530524,SME,Savings account,13912.25,2017-11-05,54,30
+C1037,Memory Khumalo,memory.khumalo37@example.co.zw,+263 77 407 4619,66 Jason Moyo St,Masvingo,21-588258-G-19,6711877570946,Premium,Savings account,52835.7,2015-08-01,9,0
+C1038,Collins Nkomo,collins.nkomo38@example.co.zw,+263 77 128 3683,65 Borrowdale Rd,Harare,64-795624-G-22,5239865739362,Retail,Savings account,1847.29,2022-04-12,22,15
+C1039,Lindiwe Zhou,lindiwe.zhou39@example.co.zw,+263 77 471 4427,40 Main Street,Masvingo,71-196221-D-22,7223746135864,Retail,Overdraft,1913.54,2016-03-07,84,0
+C1040,Lindiwe Moyo,lindiwe.moyo40@example.co.zw,+263 77 248 5402,37 Jason Moyo St,Gweru,11-599724-H-27,7231312365300,Retail,Mortgage,2661.46,2016-03-18,30,90
+C1041,Takudzwa Mapfumo,takudzwa.mapfumo41@example.co.zw,+263 77 707 1790,120 Park Lane,Mutare,42-815159-B-39,7083686138160,SME,Overdraft,16332.34,2023-09-04,37,0
+C1042,Farai Mpofu,farai.mpofu42@example.co.zw,+263 77 640 8412,73 Josiah Tongogara St,Gweru,68-743137-H-44,3693038839357,Retail,Personal loan,518.49,2016-07-03,23,15
+C1043,Simba Moyo,simba.moyo43@example.co.zw,+263 77 866 2165,97 Enterprise Rd,Masvingo,25-868017-F-19,5258334578832,Premium,Personal loan,52979.98,2022-12-08,53,0
+C1044,Thabo Zhou,thabo.zhou44@example.co.zw,+263 77 355 4019,57 Borrowdale Rd,Harare,70-719238-G-40,1285743804928,Retail,Mortgage,2562.5,2021-12-02,69,0
+C1045,Nyasha Banda,nyasha.banda45@example.co.zw,+263 77 633 6142,35 Lobengula St,Kwekwe,13-470639-C-43,9045204159307,Retail,Mortgage,2215.53,2016-07-13,2,0
+C1046,Rudo Nkomo,rudo.nkomo46@example.co.zw,+263 77 273 9597,35 Jason Moyo St,Harare,42-275773-A-23,1625635064315,SME,Personal loan,18770.51,2022-09-21,6,90
+C1047,Blessing Marufu,blessing.marufu47@example.co.zw,+263 77 193 3758,84 Josiah Tongogara St,Mutare,36-107657-E-49,1767280238485,Retail,Mortgage,2510.48,2016-12-24,71,0
+C1048,Tafadzwa Mpofu,tafadzwa.mpofu48@example.co.zw,+263 77 607 1872,70 Jason Moyo St,Bulawayo,78-512069-H-15,1550796429331,Retail,Current account,1222.03,2023-02-15,88,15
+C1049,Chipo Mhlanga,chipo.mhlanga49@example.co.zw,+263 77 304 9271,97 Jason Moyo St,Gweru,45-777527-C-39,1331109404118,Retail,Personal loan,367.27,2017-10-28,68,60
+C1050,Memory Chikwanha,memory.chikwanha50@example.co.zw,+263 77 430 3878,64 Park Lane,Harare,27-101580-G-15,6955258867050,SME,Overdraft,18455.28,2016-12-22,77,0
+C1051,Simba Mhlanga,simba.mhlanga51@example.co.zw,+263 77 998 5010,39 Enterprise Rd,Kwekwe,32-421783-A-11,4086948665389,Retail,Mortgage,1666.57,2018-11-16,22,15
+C1052,Tafadzwa Marufu,tafadzwa.marufu52@example.co.zw,+263 77 230 1065,79 Park Lane,Mutare,28-527516-E-11,7705090620393,Retail,Current account,1299.08,2016-02-08,43,0
+C1053,Farai Mapfumo,farai.mapfumo53@example.co.zw,+263 77 549 8274,94 Herbert Chitepo Ave,Mutare,67-875558-G-40,2787428602957,Premium,Overdraft,41620.22,2018-04-23,39,30
+C1054,Sipho Mhlanga,sipho.mhlanga54@example.co.zw,+263 77 780 6331,22 Josiah Tongogara St,Bulawayo,59-234688-F-44,4652417022954,SME,Overdraft,11293.23,2023-09-13,90,0
+C1055,Takudzwa Mhlanga,takudzwa.mhlanga55@example.co.zw,+263 77 409 1613,95 Enterprise Rd,Bulawayo,48-278083-G-47,8825967438328,Retail,Mortgage,1783.64,2025-01-20,41,30
+C1056,Patience Zimunya,patience.zimunya56@example.co.zw,+263 77 405 7783,29 Park Lane,Masvingo,46-939973-F-32,7853699380750,Retail,Overdraft,735.79,2021-09-14,51,15
+C1057,Nomsa Mhlanga,nomsa.mhlanga57@example.co.zw,+263 77 486 6836,111 Samora Machel Ave,Harare,40-325764-C-41,7926140599156,Retail,Mortgage,2693.7,2017-07-17,26,0
+C1058,Rumbidzai Dube,rumbidzai.dube58@example.co.zw,+263 77 219 4561,51 Josiah Tongogara St,Gweru,54-766812-B-36,6648891338011,Premium,Personal loan,65110.7,2016-02-25,45,30
+C1059,Takudzwa Zhou,takudzwa.zhou59@example.co.zw,+263 77 208 4124,112 Park Lane,Gweru,53-723321-C-17,7090635549586,Retail,Savings account,556.48,2022-02-18,56,60
+C1060,Nyasha Dube,nyasha.dube60@example.co.zw,+263 77 574 7931,113 Josiah Tongogara St,Gweru,73-164321-H-40,8168502496327,Retail,Savings account,1258.94,2016-05-23,71,15
+C1061,Lindiwe Sibanda,lindiwe.sibanda61@example.co.zw,+263 77 272 1179,110 Fife Avenue,Masvingo,49-370665-G-16,4984419094005,Retail,Personal loan,2530.36,2016-07-21,12,15
+C1062,Patience Nkomo,patience.nkomo62@example.co.zw,+263 77 978 6091,30 Enterprise Rd,Masvingo,33-653196-G-26,5430729484416,Retail,Overdraft,1339.43,2021-12-28,35,0
+C1063,Collins Tshuma,collins.tshuma63@example.co.zw,+263 77 934 9473,40 Herbert Chitepo Ave,Mutare,24-735867-D-10,4487159506952,Retail,Overdraft,1679.25,2020-12-21,17,30
+C1064,Sipho Zhou,sipho.zhou64@example.co.zw,+263 77 723 7165,87 Josiah Tongogara St,Mutare,65-892379-H-47,7302337983757,SME,Current account,15143.42,2021-12-12,34,60
+C1065,Tendai Chigumba,tendai.chigumba65@example.co.zw,+263 77 145 1379,111 Herbert Chitepo Ave,Masvingo,79-931756-A-17,6822986298202,Retail,Mortgage,839.3,2019-12-09,2,0
+C1066,Rudo Dube,rudo.dube66@example.co.zw,+263 77 150 7014,120 Enterprise Rd,Masvingo,68-208136-A-28,2898920744095,Retail,Mortgage,758.04,2016-02-26,11,90
+C1067,Sipho Ncube,sipho.ncube67@example.co.zw,+263 77 953 1392,97 Herbert Chitepo Ave,Gweru,57-683790-H-22,1901645883028,Retail,Mortgage,965.31,2019-11-18,23,15
+C1068,Rudo Dube,rudo.dube68@example.co.zw,+263 77 687 7759,106 Main Street,Gweru,28-922528-A-28,8559695546510,Retail,Savings account,859.74,2022-09-20,21,0
+C1069,Chipo Banda,chipo.banda69@example.co.zw,+263 77 205 4167,60 Lobengula St,Harare,56-509902-B-10,2630670339453,Retail,Personal loan,1572.2,2018-06-09,13,0
+C1070,Rumbidzai Sibanda,rumbidzai.sibanda70@example.co.zw,+263 77 174 4688,60 Park Lane,Mutare,27-279101-C-22,5434778336788,SME,Current account,8404.29,2024-11-16,48,0
+C1071,Chipo Chigumba,chipo.chigumba71@example.co.zw,+263 77 755 3216,80 Herbert Chitepo Ave,Masvingo,16-682379-F-24,5856400241000,Retail,Mortgage,1780.56,2015-05-05,36,0
+C1072,Tatenda Hove,tatenda.hove72@example.co.zw,+263 77 364 7789,10 Main Street,Mutare,46-413148-C-13,2197977903664,Retail,Personal loan,2086.03,2016-04-21,27,90
+C1073,Tendai Moyo,tendai.moyo73@example.co.zw,+263 77 306 1454,81 Jason Moyo St,Harare,42-623147-G-31,4850934475625,Premium,Current account,28851.05,2025-10-23,65,90
+C1074,Memory Zhou,memory.zhou74@example.co.zw,+263 77 766 6607,112 Jason Moyo St,Bulawayo,79-366346-F-35,2424911782291,Retail,Current account,1272.13,2025-01-21,78,0
+C1075,Nyasha Marufu,nyasha.marufu75@example.co.zw,+263 77 830 6831,16 Herbert Chitepo Ave,Harare,41-543205-D-23,9092634844689,Retail,Current account,485.57,2023-08-12,24,0
+C1076,Nyasha Hove,nyasha.hove76@example.co.zw,+263 77 408 3938,40 Lobengula St,Mutare,64-961038-G-45,4536615742489,SME,Current account,8517.06,2020-04-20,71,30
+C1077,Collins Marufu,collins.marufu77@example.co.zw,+263 77 424 4912,94 Jason Moyo St,Masvingo,21-997359-D-27,2392370971228,Retail,Mortgage,623.04,2018-05-20,54,0
+C1078,Takudzwa Ncube,takudzwa.ncube78@example.co.zw,+263 77 974 5754,89 Josiah Tongogara St,Kwekwe,15-389282-H-31,9991622760683,Premium,Mortgage,54846.59,2021-02-04,89,0
+C1079,Rudo Zimunya,rudo.zimunya79@example.co.zw,+263 77 353 6335,104 Enterprise Rd,Mutare,38-378144-E-10,5985080644960,SME,Savings account,11596.55,2019-08-09,60,90
+C1080,Farai Khumalo,farai.khumalo80@example.co.zw,+263 77 923 5364,51 Samora Machel Ave,Bulawayo,60-197350-F-35,1136108421678,Retail,Overdraft,181.14,2015-01-23,7,30
+C1081,Nyasha Moyo,nyasha.moyo81@example.co.zw,+263 77 152 1289,76 Josiah Tongogara St,Gweru,16-308405-C-41,1679544800397,Retail,Personal loan,1321.5,2018-01-10,69,90
+C1082,Memory Tshuma,memory.tshuma82@example.co.zw,+263 77 811 2579,115 Lobengula St,Kwekwe,61-995013-B-16,8049353999612,SME,Savings account,7769.64,2016-01-06,5,0
+C1083,Kudzai Ncube,kudzai.ncube83@example.co.zw,+263 77 412 1091,81 Borrowdale Rd,Harare,10-424376-C-34,9664799599825,Retail,Current account,1029.76,2020-03-27,77,0
+C1084,Rudo Dube,rudo.dube84@example.co.zw,+263 77 241 7859,57 Samora Machel Ave,Masvingo,21-920353-C-48,9347050990969,SME,Current account,17052.23,2022-10-24,24,15
+C1085,Patience Mutasa,patience.mutasa85@example.co.zw,+263 77 968 9328,9 Borrowdale Rd,Bulawayo,72-164396-C-41,3162170296866,Retail,Personal loan,1586.28,2016-03-27,76,60
+C1086,Patience Phiri,patience.phiri86@example.co.zw,+263 77 399 9011,119 Samora Machel Ave,Kwekwe,61-593671-F-30,6527210913515,Retail,Current account,1246.14,2018-06-04,52,0
+C1087,Tafadzwa Chikwanha,tafadzwa.chikwanha87@example.co.zw,+263 77 933 6186,75 Main Street,Bulawayo,42-675482-B-18,3088497556029,Premium,Mortgage,64887.75,2025-11-23,22,0
+C1088,Kudzai Zhou,kudzai.zhou88@example.co.zw,+263 77 255 9469,104 Fife Avenue,Masvingo,13-791192-C-10,3361962744011,Retail,Personal loan,568.94,2017-01-24,39,0
+C1089,Chipo Zimunya,chipo.zimunya89@example.co.zw,+263 77 578 1413,101 Enterprise Rd,Kwekwe,56-146324-G-13,3111608925848,Retail,Overdraft,2664.07,2024-11-18,59,0
+C1090,Tatenda Gumbo,tatenda.gumbo90@example.co.zw,+263 77 648 1893,106 Josiah Tongogara St,Bulawayo,39-886122-C-31,4134750617006,Retail,Mortgage,1670.59,2021-12-07,84,0
+C1091,Nyasha Tshuma,nyasha.tshuma91@example.co.zw,+263 77 133 9378,18 Josiah Tongogara St,Kwekwe,61-759231-B-21,4346182446216,Retail,Overdraft,2601.48,2021-01-15,7,0
+C1092,Nyasha Hove,nyasha.hove92@example.co.zw,+263 77 880 7432,77 Jason Moyo St,Bulawayo,43-332215-C-41,1598377278316,Retail,Current account,687.45,2020-02-02,8,0
+C1093,Memory Dube,memory.dube93@example.co.zw,+263 77 996 8774,10 Josiah Tongogara St,Bulawayo,44-337429-D-33,8349001317859,SME,Personal loan,11380.82,2015-10-28,73,30
+C1094,Rumbidzai Moyo,rumbidzai.moyo94@example.co.zw,+263 77 432 5156,28 Josiah Tongogara St,Gweru,19-143819-D-11,4110177720508,SME,Personal loan,1331.89,2016-06-27,22,0
+C1095,Tatenda Dube,tatenda.dube95@example.co.zw,+263 77 240 5106,106 Josiah Tongogara St,Masvingo,37-402923-B-46,3343027917034,Retail,Savings account,2677.51,2021-12-21,10,60
+C1096,Nomsa Chikwanha,nomsa.chikwanha96@example.co.zw,+263 77 837 3142,24 Fife Avenue,Bulawayo,76-796998-G-23,9540388017267,SME,Mortgage,2138.92,2015-06-10,23,0
+C1097,Sipho Zimunya,sipho.zimunya97@example.co.zw,+263 77 393 3495,33 Fife Avenue,Gweru,65-382015-B-20,6461008941001,SME,Personal loan,14621.6,2022-07-13,7,0
+C1098,Takudzwa Dube,takudzwa.dube98@example.co.zw,+263 77 333 7410,93 Samora Machel Ave,Kwekwe,56-457073-A-28,7934544743186,Retail,Personal loan,2570.19,2015-10-14,8,0
+C1099,Simba Mhlanga,simba.mhlanga99@example.co.zw,+263 77 621 8628,119 Enterprise Rd,Bulawayo,59-670201-H-39,1176562969867,Retail,Overdraft,2087.06,2024-07-10,34,0
+C1100,Patience Banda,patience.banda100@example.co.zw,+263 77 145 4998,59 Fife Avenue,Harare,50-537389-D-18,8403778152615,SME,Mortgage,19312.84,2015-08-11,51,15
+C1101,Sipho Chigumba,sipho.chigumba101@example.co.zw,+263 77 844 5948,70 Samora Machel Ave,Gweru,77-283440-A-25,8578781806179,Retail,Savings account,2211.0,2015-10-21,70,90
+C1102,Lindiwe Mpofu,lindiwe.mpofu102@example.co.zw,+263 77 843 9155,12 Josiah Tongogara St,Harare,13-916219-H-36,1393715717870,Retail,Current account,623.69,2023-03-06,3,60
+C1103,Tendai Dube,tendai.dube103@example.co.zw,+263 77 922 7952,79 Fife Avenue,Masvingo,76-373827-E-21,9765981908954,SME,Overdraft,3910.48,2021-12-26,21,0
+C1104,Simba Hove,simba.hove104@example.co.zw,+263 77 578 8193,35 Lobengula St,Gweru,44-320233-C-23,8598282546615,Retail,Mortgage,2455.25,2022-10-06,12,0
+C1105,Nomsa Hove,nomsa.hove105@example.co.zw,+263 77 877 5749,39 Main Street,Kwekwe,60-560550-C-32,4031653733610,SME,Current account,10978.46,2024-10-02,28,0
+C1106,Farai Chikwanha,farai.chikwanha106@example.co.zw,+263 77 822 7490,66 Lobengula St,Masvingo,30-274457-H-15,3090660029178,SME,Savings account,17282.33,2019-12-16,13,0
+C1107,Tendai Chikwanha,tendai.chikwanha107@example.co.zw,+263 77 885 7127,20 Enterprise Rd,Bulawayo,17-614772-E-20,7778902585355,SME,Personal loan,10324.79,2023-04-16,14,0
+C1108,Sipho Hove,sipho.hove108@example.co.zw,+263 77 254 8043,111 Samora Machel Ave,Kwekwe,64-854285-E-30,2244930342425,Retail,Current account,917.91,2024-05-14,6,60
+C1109,Collins Zhou,collins.zhou109@example.co.zw,+263 77 958 9735,37 Jason Moyo St,Kwekwe,15-129319-H-27,3028613779492,Premium,Personal loan,41311.23,2015-02-07,32,0
+C1110,Nomsa Zhou,nomsa.zhou110@example.co.zw,+263 77 883 1476,71 Borrowdale Rd,Gweru,75-864348-B-48,8407193230676,Retail,Current account,2495.98,2015-02-02,16,15
+C1111,Thabo Banda,thabo.banda111@example.co.zw,+263 77 416 7207,9 Jason Moyo St,Harare,55-611771-F-25,3356369556071,Premium,Current account,8138.2,2017-06-10,75,60
+C1112,Rudo Phiri,rudo.phiri112@example.co.zw,+263 77 268 2085,71 Park Lane,Masvingo,17-397210-F-25,2335224276864,SME,Personal loan,4556.4,2022-11-08,29,30
+C1113,Collins Tshuma,collins.tshuma113@example.co.zw,+263 77 974 2574,54 Park Lane,Mutare,46-248012-E-39,5669932902968,Retail,Overdraft,209.14,2024-05-20,66,0
+C1114,Sipho Chigumba,sipho.chigumba114@example.co.zw,+263 77 970 6796,118 Lobengula St,Kwekwe,27-891806-F-21,5791178724156,Retail,Personal loan,2652.22,2021-02-17,55,30
+C1115,Simba Moyo,simba.moyo115@example.co.zw,+263 77 508 2333,28 Jason Moyo St,Gweru,56-124073-G-47,6045301431457,SME,Savings account,8842.07,2021-11-20,71,30
+C1116,Tariro Hove,tariro.hove116@example.co.zw,+263 77 577 2336,119 Herbert Chitepo Ave,Bulawayo,13-615750-E-39,8801598180590,Retail,Mortgage,670.11,2023-09-21,53,30
+C1117,Farai Khumalo,farai.khumalo117@example.co.zw,+263 77 858 5450,10 Park Lane,Gweru,18-967377-D-26,6526053476112,Retail,Mortgage,2558.11,2016-05-07,76,30
+C1118,Nomsa Nkomo,nomsa.nkomo118@example.co.zw,+263 77 877 2813,66 Samora Machel Ave,Kwekwe,67-900151-F-34,3557635678020,SME,Personal loan,13991.16,2021-05-03,23,60
+C1119,Tendai Mutasa,tendai.mutasa119@example.co.zw,+263 77 374 9976,44 Fife Avenue,Kwekwe,52-961809-A-20,7462528225295,Retail,Mortgage,2103.35,2025-08-18,10,60
+C1120,Sipho Zimunya,sipho.zimunya120@example.co.zw,+263 77 623 5155,74 Enterprise Rd,Masvingo,61-910838-B-41,9064204406305,Retail,Overdraft,2369.5,2025-06-11,64,0

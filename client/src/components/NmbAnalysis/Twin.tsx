@@ -10,6 +10,29 @@ const PREVIEW_ROWS = 10;
 
 type Props = { dataset: TNmbDataset; limits?: TNmbAnalysisLimits };
 
+/** The async clipboard API needs a secure context; plain-HTTP intranet hosts fall back to execCommand. */
+async function writeClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    try {
+      return document.execCommand('copy');
+    } catch {
+      return false;
+    } finally {
+      document.body.removeChild(area);
+    }
+  }
+}
+
 /** Column selection, synthetic twin generation and preview, and the prompt for the chat. */
 export default function Twin({ dataset, limits }: Props) {
   const localize = useLocalize();
@@ -20,6 +43,7 @@ export default function Twin({ dataset, limits }: Props) {
   const [rows, setRows] = useState(Math.min(DEFAULT_ROWS, maxRows));
   const [question, setQuestion] = useState('');
   const [copied, setCopied] = useState<'ok' | 'failed' | null>(null);
+  const [manual, setManual] = useState<string | null>(null);
   const synthesize = useSynthesizeNmbDatasetMutation();
   const hasTwin = dataset.synthetic != null;
   const {
@@ -65,12 +89,13 @@ export default function Twin({ dataset, limits }: Props) {
       allowedImports: limits?.allowed_imports ?? DEFAULT_IMPORTS,
       question,
     });
-    try {
-      await navigator.clipboard.writeText(text);
+    setManual(null);
+    if (await writeClipboard(text)) {
       setCopied('ok');
-    } catch {
-      setCopied('failed');
+      return;
     }
+    setCopied('failed');
+    setManual(text);
   };
 
   return (
@@ -228,6 +253,15 @@ export default function Twin({ dataset, limits }: Props) {
                   </span>
                 )}
               </div>
+              {manual != null && (
+                <Textarea
+                  readOnly
+                  value={manual}
+                  aria-label={localize('com_nmb_analysis_copy_prompt')}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="min-h-40"
+                />
+              )}
             </>
           )}
         </section>
