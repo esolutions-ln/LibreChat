@@ -28,12 +28,14 @@ Use two browser windows side by side, one per user (use a private window for the
 1. **Analyst:** in the chat click **+** then **From Local Computer** and choose `customer-portfolio.pdf`.
    - *Expect:* a red notice "Your message contains content that needs review before it can be sent. It has not been sent to the AI."
    - *Say:* the gateway read the tables cell by cell and found account numbers and phones; nothing left the bank.
+   - Within about 15 seconds a notice appears above the message box: "customer-portfolio.pdf is waiting for review. You will be told here when it is decided."
 2. **Reviewer:** open **Reviews**, select the new item (user Legal Test, type Document).
    - *Show:* findings by table cell (`page[1].t[2].r[1].c[1]`), the original and masked preview.
    - Click **Synthesize and release**, then confirm in the dialog.
    - *Say:* the reviewer sees the originals; the model will see realistic fake values, never the real ones.
-3. **Analyst:** attach `customer-portfolio.pdf` again (same file).
-   - *Expect:* it attaches as `customer-portfolio.pdf.masked.md`. (Files are released when the same user re-attaches the identical file; this is a by-design one-time release.)
+3. **Analyst:** wait for the notification. Within about 15 seconds the notice changes to "customer-portfolio.pdf was approved. Attach the same file again, then send your question." and a green message pops up. (If the reviewer rejects it, the notice shows the reviewer's reason and a Dismiss button.) Nothing is sent for the analyst; they decide what to ask.
+   - Attach `customer-portfolio.pdf` again (the identical file).
+   - *Expect:* it attaches as `customer-portfolio.pdf.masked.md`. (The release is one-time: once re-attached the notice disappears.)
 4. **Analyst:** type the question and send:
    > From the attached tables: which segment has the highest total balance, how many customers are 30+ days in arrears, and who are the three customers with the largest balances (include their phone numbers)?
    - *Expect:* a streamed answer from Claude: highest-balance segment, the arrears count, and a table of the three largest balances with phone numbers.
