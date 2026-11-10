@@ -80,6 +80,9 @@ export function fakeScanner(over: Partial<Record<keyof ScannerClient, jest.Mock>
     reject: jest.fn().mockResolvedValue(reviewItem({ status: 'rejected' })),
     getBlocklist: jest.fn().mockResolvedValue([{ term: 'Project Falcon', source: 'base' }]),
     addBlocklist: jest.fn().mockResolvedValue(['x']),
+    markReleased: jest
+      .fn()
+      .mockResolvedValue(reviewItem({ released_at: '2026-11-10T08:00:00+00:00' })),
     ...over,
   };
   return scanner as typeof scanner & ScannerClient;

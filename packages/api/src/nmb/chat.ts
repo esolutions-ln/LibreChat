@@ -3,7 +3,7 @@ import { NMB_MASK_NOTE, stripNmbMaskNote } from 'librechat-data-provider';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { GatewayIdentity } from './identity';
 import type { ScannerClient } from './scanner';
-import type { NmbConfig } from './types';
+import type { ApprovalMode, NmbConfig } from './types';
 import { screenText, type Screened } from './screen';
 import { isNmbMisconfigured } from './config';
 import { resolveIdentity } from './identity';
@@ -21,6 +21,10 @@ export const MASK_NOTE: string = NMB_MASK_NOTE;
 export const CHART_NOTE_MARKER = '\n\n[NMB chart note:';
 export const CHART_NOTE: string = `${CHART_NOTE_MARKER} to show a chart, add a fenced code block whose language is nmb-chart containing one JSON object: {"version":1,"title":string,"type":"bar"|"stacked_bar"|"line"|"pie","unit":string,"categories":string[],"series":[{"name":string,"values":(number|null)[]}]}. Use only numbers that appear in the provided material, one value per category (null when missing), at most 60 categories and 12 series. The app renders the chart and offers Excel and PDF export.]`;
 const CHART_WORDS = /\b(chart|graph|plot|visuali[sz]\w*|dashboard|diagram)\b/i;
+
+/** Added to a released synthetic prompt so the model keeps the stand-ins verbatim; stripped from display like the others. */
+export const SYNTHETIC_NOTE_MARKER = '\n\n[NMB synthetic note:';
+export const SYNTHETIC_NOTE: string = `${SYNTHETIC_NOTE_MARKER} names, numbers and other identifiers in this message are synthetic stand-ins for real data. Use them exactly as written and do not comment on them.]`;
 
 export type NmbErrorType =
   | 'nmb_review_pending'
@@ -200,7 +204,10 @@ async function release(
   scanner: ScannerClient,
   identity: GatewayIdentity,
   reviewId: string,
-): Promise<{ ok: true; content: string } | { ok: false; reason: 'not_ready' | 'unavailable' }> {
+): Promise<
+  | { ok: true; content: string; mode: ApprovalMode }
+  | { ok: false; reason: 'not_ready' | 'unavailable' }
+> {
   try {
     const review = await scanner.getReview(reviewId);
     if (
@@ -214,7 +221,11 @@ async function release(
     if (result.status !== 'approved-masked' || typeof result.sanitized_content !== 'string') {
       return { ok: false, reason: 'not_ready' };
     }
-    return { ok: true, content: result.sanitized_content };
+    return {
+      ok: true,
+      content: result.sanitized_content,
+      mode: result.mode === 'synthetic' ? 'synthetic' : 'masked',
+    };
   } catch (error) {
     const kind = (error as { kind?: string })?.kind;
     if (kind === 'not_found' || kind === 'forbidden') {
@@ -223,6 +234,14 @@ async function release(
     logger.error('[nmb] release lookup failed; failing closed', { kind: kind ?? 'unknown' });
     return { ok: false, reason: 'unavailable' };
   }
+}
+
+/** The note that goes with a released prompt: stand-ins to keep verbatim, tokens to keep verbatim, or none. */
+function releaseNote(mode: ApprovalMode, content: string, maskNote: boolean): string {
+  if (mode === 'synthetic') {
+    return SYNTHETIC_NOTE;
+  }
+  return maskNote && PLACEHOLDER_RE.test(content) ? MASK_NOTE : '';
 }
 
 type Blocked = Exclude<Screened, { kind: 'pass' }>;
@@ -305,10 +324,7 @@ export function createNmbChatGateway(deps: NmbChatDeps): RequestHandler {
             sendNmbError(res, out.reason === 'unavailable' ? 'nmb_unavailable' : 'nmb_forbidden');
             return;
           }
-          body.text =
-            config.maskNote && PLACEHOLDER_RE.test(out.content)
-              ? out.content + MASK_NOTE
-              : out.content;
+          body.text = out.content + releaseNote(out.mode, out.content, config.maskNote);
           if (config.reports.enabled && CHART_WORDS.test(out.content)) {
             body.text = `${body.text as string}${CHART_NOTE}`;
           }
@@ -326,6 +342,12 @@ export function createNmbChatGateway(deps: NmbChatDeps): RequestHandler {
             if (r.kind === 'pass') {
               t.set(r.content);
             }
+          });
+          /** Best effort: the owner's chat uses this to avoid sending the approved text twice. */
+          await scanner.markReleased(m[1]).catch((error: unknown) => {
+            logger.warn('[nmb] could not record release', {
+              kind: (error as { kind?: string })?.kind ?? 'unknown',
+            });
           });
           next();
           return;

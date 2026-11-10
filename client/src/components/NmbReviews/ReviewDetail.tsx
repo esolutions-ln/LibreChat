@@ -7,9 +7,9 @@ import {
   useRejectNmbReviewMutation,
   useApproveNmbReviewMutation,
 } from '~/data-provider';
-import ApproveForm from './ApproveForm';
 import FindingsList from './FindingsList';
 import OriginalView from './OriginalView';
+import ApproveForm from './ApproveForm';
 import { useLocalize } from '~/hooks';
 
 const MIN_REASON = 3;
@@ -31,8 +31,15 @@ export default function ReviewDetail({
 
   const fail = () => showToast({ message: localize('com_nmb_action_failed'), status: 'error' });
   const approve = useApproveNmbReviewMutation({
-    onSuccess: () => {
-      showToast({ message: localize('com_nmb_approved_toast'), status: 'success' });
+    onSuccess: (_data, variables) => {
+      showToast({
+        message: localize(
+          variables.body.mode === 'synthetic'
+            ? 'com_nmb_approved_synthetic_toast'
+            : 'com_nmb_approved_toast',
+        ),
+        status: 'success',
+      });
       onDone();
     },
     onError: fail,
@@ -45,6 +52,17 @@ export default function ReviewDetail({
     onError: fail,
   });
   const busy = approve.isLoading || reject.isLoading;
+
+  const resolvedText = (item: TNmbReview): string => {
+    if (item.status === 'rejected') {
+      return localize('com_nmb_resolved_rejected', { 0: item.reviewer_note ?? '' });
+    }
+    return localize(
+      item.mode === 'synthetic'
+        ? 'com_nmb_resolved_approved_synthetic'
+        : 'com_nmb_resolved_approved',
+    );
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -73,13 +91,7 @@ export default function ReviewDetail({
       {review.reason && <p className="text-text-secondary text-sm">{review.reason}</p>}
       <FindingsList findings={review.findings} />
 
-      {!pending && (
-        <p className="text-text-secondary text-sm">
-          {review.status === 'rejected'
-            ? localize('com_nmb_resolved_rejected', { 0: review.reviewer_note ?? '' })
-            : localize('com_nmb_resolved_approved')}
-        </p>
-      )}
+      {!pending && <p className="text-text-secondary text-sm">{resolvedText(review)}</p>}
 
       {pending && original.isLoading && <Spinner className="size-5" />}
       {pending && original.isError && (

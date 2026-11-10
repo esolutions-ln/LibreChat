@@ -1,6 +1,6 @@
 import { logger } from '@librechat/data-schemas';
 import type { Request, RequestHandler, Response } from 'express';
-import type { NmbConfig, ReviewItem } from './types';
+import type { ApprovalMode, NmbConfig, ReviewItem } from './types';
 import type { ScannerClient } from './scanner';
 import { SCANNER_REVIEWER_ROLES, resolveIdentity } from './identity';
 import { parseChoices, type ChoiceError } from './blocklist';
@@ -247,6 +247,8 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
           status: item.status,
           created_at: item.created_at,
           resolved_at: item.resolved_at,
+          mode: item.mode ?? null,
+          released: Boolean(item.released_at),
           reason: item.status === 'rejected' ? (item.reviewer_note ?? null) : null,
         });
       } catch (error) {
@@ -257,7 +259,9 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
     /** POST /unmask: display-only restoration for the caller's own placeholders */
     unmask: (async (req, res) => {
       const identity = resolveIdentity(req, config);
-      const text = (req.body as { text?: unknown } | undefined)?.text;
+      const body = req.body as { text?: unknown; synthetic?: unknown } | undefined;
+      const text = body?.text;
+      const synthetic = body?.synthetic === true;
       if (!config.enabled || !identity) {
         res.status(404).json({ message: 'Not found' });
         return;
@@ -266,12 +270,13 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
         res.status(400).json({ message: 'Invalid text' });
         return;
       }
-      if (!new RegExp(PLACEHOLDER_RE.source).test(text)) {
+      /** Synthetic values have no recognisable shape, so the scanner must look for them. */
+      if (!synthetic && !new RegExp(PLACEHOLDER_RE.source).test(text)) {
         res.json({ text, restored: 0 });
         return;
       }
       try {
-        const out = await scanner.unmask(identity.ctx.scope, text, identity.ctx.roles);
+        const out = await scanner.unmask(identity.ctx.scope, text, identity.ctx.roles, synthetic);
         res.json({ text: out.text, restored: out.restored });
       } catch (error) {
         if (error instanceof ScannerError && error.kind === 'forbidden') {
@@ -351,7 +356,12 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
         return;
       }
       const me = actor(req);
-      const body = (req.body ?? {}) as { note?: unknown; additions?: unknown };
+      const body = (req.body ?? {}) as { note?: unknown; additions?: unknown; mode?: unknown };
+      if (body.mode !== undefined && body.mode !== 'masked' && body.mode !== 'synthetic') {
+        res.status(400).json({ message: 'Invalid mode' });
+        return;
+      }
+      const mode: ApprovalMode = body.mode === 'synthetic' ? 'synthetic' : 'masked';
       const note = typeof body.note === 'string' ? body.note.trim().slice(0, MAX_NOTE) : undefined;
       if (item.status !== 'pending') {
         res.status(409).json({ message: 'Review is no longer pending' });
@@ -362,7 +372,8 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
         return;
       }
       try {
-        const additions = body.additions ?? [];
+        /** Blocklist choices only make sense for a masked approval; a synthetic one replaces every finding. */
+        const additions = mode === 'synthetic' ? [] : (body.additions ?? []);
         let literals: string[] = [];
         let regexes: string[] = [];
         if (Array.isArray(additions) && additions.length > 0) {
@@ -398,6 +409,7 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
           roles: SCANNER_REVIEWER_ROLES,
           note,
           blocklist_additions: literals,
+          mode,
         });
         await audit({
           action: 'nmb_review.approved',
@@ -405,13 +417,19 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
           target: { type: 'nmb_review', id: item.id },
           outcome: 'success',
           metadata: {
+            mode,
             findings: result.findings.length,
             literals_added: literals.length,
             patterns_added: regexes.length,
             has_note: Boolean(note),
           },
         });
-        res.json({ id: item.id, status: 'approved-masked', findings: result.findings.length });
+        res.json({
+          id: item.id,
+          status: 'approved-masked',
+          mode,
+          findings: result.findings.length,
+        });
       } catch (error) {
         await audit({
           action: 'nmb_review.approved',

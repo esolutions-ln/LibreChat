@@ -6,6 +6,7 @@ import logging
 import os
 import uuid
 from functools import lru_cache
+from typing import Literal
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from pydantic import BaseModel, Field
@@ -47,6 +48,7 @@ class UnmaskIn(BaseModel):
     conversation_id: str
     text: str
     roles: list[str] = []
+    synthetic: bool = False   # also restore synthetic values issued for this scope, not only <TYPE_nnn> tokens
 
 
 class ReviewActionIn(BaseModel):
@@ -54,6 +56,7 @@ class ReviewActionIn(BaseModel):
     roles: list[str] = []
     note: str | None = None
     blocklist_additions: list[str] = []
+    mode: Literal["masked", "synthetic"] = "masked"   # approve-masked only
 
 
 class BlocklistAddIn(BaseModel):
@@ -92,7 +95,7 @@ async def scan_file(file: UploadFile = File(...), conversation_id: str = Form(..
 @app.post("/unmask")
 def unmask(body: UnmaskIn, sc: Scanner = Depends(get_scanner)):
     try:
-        return sc.unmask(body.conversation_id, body.text, body.roles)
+        return sc.unmask(body.conversation_id, body.text, body.roles, body.synthetic)
     except PermissionError as e:
         raise HTTPException(403, str(e))
 
@@ -147,7 +150,16 @@ def _act(fn, rid, body: ReviewActionIn):
 
 @app.post("/reviews/{rid}/approve-masked")
 def approve(rid: str, body: ReviewActionIn, sc: Scanner = Depends(get_scanner)):
-    return _act(sc.approve_masked, rid, body)
+    return _act(lambda *a: sc.approve_masked(*a, mode=body.mode), rid, body)
+
+
+@app.post("/reviews/{rid}/released")
+def released(rid: str, sc: Scanner = Depends(get_scanner)):
+    """Service key only (app-wide dependency). Idempotent: the first call sets released_at."""
+    try:
+        return sc.mark_released(rid)
+    except KeyError:
+        raise HTTPException(404, "review not found")
 
 
 @app.post("/reviews/{rid}/reject")

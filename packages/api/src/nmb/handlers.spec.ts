@@ -210,6 +210,7 @@ describe('reviewer actions', () => {
       roles: ['reviewer'],
       note: 'ok to send masked',
       blocklist_additions: [SECRET],
+      mode: 'masked',
     });
     expect(audits).toEqual([
       expect.objectContaining({
@@ -410,7 +411,7 @@ describe('end-user endpoints', () => {
       }),
     );
     expect(res.statusCode).toBe(200);
-    expect(scanner.unmask).toHaveBeenCalledWith('u:user-9', 'pay <ACCOUNT_001>', ['user']);
+    expect(scanner.unmask).toHaveBeenCalledWith('u:user-9', 'pay <ACCOUNT_001>', ['user'], false);
   });
 
   it('unmask skips the scanner when there are no placeholders, and degrades to masked text when forbidden', async () => {

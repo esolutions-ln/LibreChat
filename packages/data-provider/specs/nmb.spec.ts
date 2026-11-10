@@ -3,10 +3,18 @@ import {
   NMB_CHART_NOTE_MARKER,
   NMB_MASK_NOTE,
   NMB_MASK_NOTE_MARKER,
+  NMB_SYNTHETIC_NOTE_MARKER,
   parseNmbChartSpec,
   stripNmbMaskNote,
 } from '../src/types/nmb';
 import * as endpoints from '../src/api-endpoints';
+import * as dataService from '../src/data-service';
+import request from '../src/request';
+
+jest.mock('../src/request', () => ({
+  __esModule: true,
+  default: { post: jest.fn().mockResolvedValue({}), get: jest.fn() },
+}));
 
 const valid = {
   version: 1,
@@ -179,6 +187,67 @@ describe('stripNmbMaskNote', () => {
   it('keeps the redaction marker unchanged', () => {
     expect(NMB_MASK_NOTE_MARKER).toBe('\n\n[NMB redaction note:');
     expect(NMB_CHART_NOTE_MARKER).toBe('\n\n[NMB chart note:');
+    expect(NMB_SYNTHETIC_NOTE_MARKER).toBe('\n\n[NMB synthetic note:');
+  });
+
+  it('cuts at the synthetic note', () => {
+    expect(stripNmbMaskNote(`Pay Jane Doe${NMB_SYNTHETIC_NOTE_MARKER} names are fictional.]`)).toBe(
+      'Pay Jane Doe',
+    );
+  });
+
+  it('cuts at the earliest of all three markers, whatever the order', () => {
+    const notes = [
+      `${NMB_MASK_NOTE_MARKER} a.]`,
+      `${NMB_CHART_NOTE_MARKER} b.]`,
+      `${NMB_SYNTHETIC_NOTE_MARKER} c.]`,
+    ];
+    const orders = [
+      [0, 1, 2],
+      [0, 2, 1],
+      [1, 0, 2],
+      [1, 2, 0],
+      [2, 0, 1],
+      [2, 1, 0],
+    ];
+    for (const order of orders) {
+      expect(stripNmbMaskNote(`text${order.map((i) => notes[i]).join('')}`)).toBe('text');
+    }
+  });
+
+  it('does not cut text that only mentions a note without the line break', () => {
+    expect(stripNmbMaskNote('see [NMB synthetic note: in the docs')).toBe(
+      'see [NMB synthetic note: in the docs',
+    );
+  });
+});
+
+describe('unmaskNmbText and approveNmbReview payloads', () => {
+  const post = request.post as jest.Mock;
+  beforeEach(() => post.mockClear());
+
+  it('sends only the text for the token-only behaviour', async () => {
+    await dataService.unmaskNmbText('pay <ACCOUNT_001>');
+    expect(post).toHaveBeenCalledWith(endpoints.nmbUnmask(), { text: 'pay <ACCOUNT_001>' });
+    await dataService.unmaskNmbText('x', {});
+    await dataService.unmaskNmbText('x', { synthetic: false });
+    expect(post).toHaveBeenLastCalledWith(endpoints.nmbUnmask(), { text: 'x' });
+  });
+
+  it('adds synthetic: true only when asked', async () => {
+    await dataService.unmaskNmbText('Pay Jane Doe', { synthetic: true });
+    expect(post).toHaveBeenCalledWith(endpoints.nmbUnmask(), {
+      text: 'Pay Jane Doe',
+      synthetic: true,
+    });
+  });
+
+  it('passes the approval mode through to the gateway', async () => {
+    await dataService.approveNmbReview('rev_0123456789ab', { note: 'ok', mode: 'synthetic' });
+    expect(post).toHaveBeenCalledWith(endpoints.nmbReviewApprove('rev_0123456789ab'), {
+      note: 'ok',
+      mode: 'synthetic',
+    });
   });
 });
 

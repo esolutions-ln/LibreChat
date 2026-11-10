@@ -39,6 +39,8 @@ export type TNmbReview = {
   created_at: string;
   updated_at: string;
   resolved_at: string | null;
+  /** How an approved item was cleared; absent on older scanners, which means masked. */
+  mode?: TNmbApproveMode;
 };
 
 export type TNmbReviewsResponse = { items: TNmbReview[] };
@@ -52,7 +54,15 @@ export type TNmbOriginal = {
 /** A reviewer's choice to add a value or pattern to the masked-data list. */
 export type TNmbBlocklistChoice = { value: string; mode: 'literal' | 'regex' };
 
-export type TNmbApproveBody = { note?: string; additions?: TNmbBlocklistChoice[] };
+/** How an approved prompt reaches the model: sensitive values as tokens, or as realistic fakes. */
+export type TNmbApproveMode = 'masked' | 'synthetic';
+
+export type TNmbApproveBody = {
+  note?: string;
+  /** Ignored by the gateway for `synthetic`. */
+  additions?: TNmbBlocklistChoice[];
+  mode?: TNmbApproveMode;
+};
 export type TNmbRejectBody = { reason: string };
 
 export type TNmbBlocklistEntry = {
@@ -71,6 +81,10 @@ export type TNmbSubmission = {
   resolved_at: string | null;
   /** Only set for a rejected submission. */
   reason: string | null;
+  /** How an approved submission was cleared. Absent on older gateways, which means masked. */
+  mode?: TNmbApproveMode;
+  /** The approved prompt has already been sent to the model. */
+  released?: boolean;
 };
 
 export type TNmbUnmaskResponse = { text: string; restored: number };
@@ -88,9 +102,12 @@ export const NMB_PLACEHOLDER_REGEX = /<[A-Z][A-Z_]*_\d{3,}>/;
 /** Start of the note that tells the model how to answer with an `nmb-chart` block. */
 export const NMB_CHART_NOTE_MARKER = '\n\n[NMB chart note:';
 
+/** Start of the note that tells the model a released prompt carries realistic fake values. */
+export const NMB_SYNTHETIC_NOTE_MARKER = '\n\n[NMB synthetic note:';
+
 /** The text without the gateway's trailing note(s): cut at the earliest marker present. */
 export const stripNmbMaskNote = (text: string): string => {
-  const cuts = [NMB_MASK_NOTE_MARKER, NMB_CHART_NOTE_MARKER]
+  const cuts = [NMB_MASK_NOTE_MARKER, NMB_CHART_NOTE_MARKER, NMB_SYNTHETIC_NOTE_MARKER]
     .map((marker) => text.indexOf(marker))
     .filter((i) => i !== -1);
   return cuts.length === 0 ? text : text.slice(0, Math.min(...cuts));

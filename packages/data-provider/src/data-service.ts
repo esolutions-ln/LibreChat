@@ -92,8 +92,12 @@ export const addNmbBlocklist = (entries: TNmbBlocklistChoice[]): Promise<{ added
   request.post(endpoints.nmbBlocklist(), { entries });
 export const getNmbSubmission = (id: string): Promise<TNmbSubmission> =>
   request.get(endpoints.nmbSubmission(id));
-export const unmaskNmbText = (text: string): Promise<TNmbUnmaskResponse> =>
-  request.post(endpoints.nmbUnmask(), { text });
+/** `synthetic` also restores the fake values issued for a synthetic approval, not only tokens. */
+export const unmaskNmbText = (
+  text: string,
+  options?: { synthetic?: boolean },
+): Promise<TNmbUnmaskResponse> =>
+  request.post(endpoints.nmbUnmask(), options?.synthetic ? { text, synthetic: true } : { text });
 export const getNmbDatasets = (): Promise<{ items: TNmbDataset[] }> =>
   request.get(endpoints.nmbDatasets());
 export const getNmbDataset = (id: string): Promise<TNmbDataset> =>

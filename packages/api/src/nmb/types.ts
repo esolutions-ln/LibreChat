@@ -42,7 +42,14 @@ export interface ReviewItem {
   created_at: string;
   updated_at: string;
   resolved_at: string | null;
+  /** How the reviewer approved it; null until approved. */
+  mode?: ApprovalMode | null;
+  /** Set once the owner's chat has sent the approved text to the model; null before. */
+  released_at?: string | null;
 }
+
+/** `masked`: values become `<TYPE_nnn>` tokens. `synthetic`: values become realistic fakes (docs/nmb/SYNTHETIC.md). */
+export type ApprovalMode = 'masked' | 'synthetic';
 
 export interface ReviewOriginal {
   id: string;
@@ -55,6 +62,7 @@ export interface ReviewResult {
   status: ReviewStatus;
   sanitized_content: string | null;
   sanitized_segments: Array<{ location: string; text: string }> | null;
+  mode?: ApprovalMode | null;
 }
 
 export interface ScanContext {
@@ -70,6 +78,7 @@ export interface ReviewActionBody {
   roles: string[];
   note?: string;
   blocklist_additions?: string[];
+  mode?: ApprovalMode;
 }
 
 export interface BlocklistEntry {

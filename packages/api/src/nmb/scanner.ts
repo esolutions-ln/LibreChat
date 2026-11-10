@@ -58,7 +58,15 @@ function isReviewItem(v: unknown): v is ReviewItem {
 export interface ScannerClient {
   scanText(text: string, ctx: ScanContext): Promise<ScanResult>;
   scanFile(filename: string, data: Uint8Array, ctx: ScanContext): Promise<ScanResult>;
-  unmask(scope: string, text: string, roles: string[]): Promise<{ text: string; restored: number }>;
+  /** `synthetic` also restores synthetic values issued for this scope, not just `<TYPE_nnn>` tokens. */
+  unmask(
+    scope: string,
+    text: string,
+    roles: string[],
+    synthetic?: boolean,
+  ): Promise<{ text: string; restored: number }>;
+  /** Records that the owner's chat sent the approved text to the model (idempotent). */
+  markReleased(id: string): Promise<ReviewItem>;
   listReviews(query?: { status?: string; department?: string }): Promise<ReviewItem[]>;
   getReview(id: string): Promise<ReviewItem>;
   getOriginal(id: string, roles: string[]): Promise<ReviewOriginal>;
@@ -198,9 +206,17 @@ export function createScannerClient(
       return scan(call('POST', '/scan/file', { form }));
     },
 
-    async unmask(scope, text, roles) {
+    async markReleased(id) {
+      const out = await call('POST', `/reviews/${encodeURIComponent(id)}/released`, { json: {} });
+      if (!isReviewItem(out)) {
+        throw new ScannerError('bad_response');
+      }
+      return out;
+    },
+
+    async unmask(scope, text, roles, synthetic = false) {
       const out = (await call('POST', '/unmask', {
-        json: { conversation_id: scope, text, roles },
+        json: { conversation_id: scope, text, roles, ...(synthetic ? { synthetic: true } : {}) },
       })) as { text?: unknown; restored?: unknown };
       if (typeof out?.text !== 'string') {
         throw new ScannerError('bad_response');

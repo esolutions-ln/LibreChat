@@ -112,9 +112,17 @@ class Scanner:
     def scan_segments(self, segments: list[ex.Segment], ctx: Ctx, *, source: str, meta: dict | None = None,
                       doc_review_reason: str | None = None, doc_reject_reason: str | None = None,
                       force_mask_blocks: bool = False, create_review: bool = True,
-                      original_ref: str | None = None, rendered: bool = False) -> dict:
+                      original_ref: str | None = None, rendered: bool = False,
+                      synthetic: bool = False) -> dict:
         meta = meta or {}
         raws = self._analyze_segments(segments)
+        # Synthetic mode: no fake may equal any real value found in this text.
+        real_lower = {r.value.lower() for r in raws}
+        real_norm = {norm_value(r.entity, r.value) for r in raws}
+
+        def is_real(entity: str, cand: str) -> bool:
+            return cand.lower() in real_lower or norm_value(entity, cand) in real_norm
+
         findings, kept = [], []
         block_reasons: list[str] = []
         reject = bool(doc_reject_reason)
@@ -170,7 +178,10 @@ class Scanner:
             for si in sorted(by_seg):
                 items = sorted(by_seg[si], key=lambda x: x[0].start)
                 for r, cfg, nv, f in items:        # left to right so numbering follows reading order
-                    if f["action"] == "MASK":
+                    if f["action"] == "MASK" and synthetic:
+                        f["placeholder"] = self.vault.get_or_create_synthetic(
+                            ctx.conversation_id, r.entity, nv, r.value, bool(cfg["reversible"]), is_real)
+                    elif f["action"] == "MASK":
                         f["placeholder"] = self.vault.get_or_create_placeholder(
                             ctx.conversation_id, r.entity, cfg["prefix"], nv, r.value, bool(cfg["reversible"]))
                 t = segments[si].text
@@ -235,23 +246,12 @@ class Scanner:
                 "document": meta, "sanitized_segments": None, "summary": {}}
 
     # ------------------------------------------------------------ unmask
-    def unmask(self, conversation_id: str, text: str, roles: list[str]) -> dict:
+    def unmask(self, conversation_id: str, text: str, roles: list[str], synthetic: bool = False) -> dict:
         allowed = self.policy.unmask_roles
         if allowed and not (allowed & set(roles)):
             raise PermissionError("role not permitted to unmask")
-        restored, unresolved = 0, []
-
-        def sub(m):
-            nonlocal restored
-            v = self.vault.lookup_placeholder(conversation_id, m.group(0))
-            if v is None:
-                unresolved.append(m.group(0))
-                return m.group(0)
-            restored += 1
-            return v
-
-        out = PLACEHOLDER_RE.sub(sub, text)
-        return {"text": out, "restored": restored, "unresolved": sorted(set(unresolved))}
+        out, restored, unresolved = self.vault.restore_text(conversation_id, text, synthetic)
+        return {"text": out, "restored": restored, "unresolved": unresolved}
 
     # ------------------------------------------------------------ reviews
     def _create_review(self, result, segments, ctx, source, meta, original_ref):
@@ -274,7 +274,7 @@ class Scanner:
             "reviewer": None if result["decision"] == "review" else "system",
             "reviewer_note": None, "blocklist_additions": [],
             "created_at": now(), "updated_at": now(), "resolved_at": None if result["decision"] == "review" else now(),
-            "result_ref": None,
+            "result_ref": None, "mode": None, "released_at": None,
         }
         self.vault.save_review(item)
         return item["id"]
@@ -294,7 +294,11 @@ class Scanner:
                 "segments": [{"location": s.location, "text": s.text} for s in segs]}
 
     def approve_masked(self, rid: str, reviewer: str, roles: list[str], note: str | None,
-                       blocklist_terms: list[str]) -> dict:
+                       blocklist_terms: list[str], mode: str = "masked") -> dict:
+        """Re-scans the original and stores the approved text. `mode` is `masked` (`<TYPE_nnn>` tokens) or
+        `synthetic` (realistic fakes for every finding, including entities whose policy action is BLOCK)."""
+        if mode not in ("masked", "synthetic"):
+            raise ValueError(f"unknown approval mode {mode!r}")
         self._require_reviewer(roles)
         item = self.vault.get_review(rid)
         if not item:
@@ -306,12 +310,12 @@ class Scanner:
         segs = [ex.Segment(**s) for s in blob["segments"]]
         ctx = Ctx(item["conversation_id"], item["user"], item["department"], [])
         res = self.scan_segments(segs, ctx, source=blob["source"], meta=blob["meta"],
-                                 force_mask_blocks=True, create_review=False)
-        item.update(status="approved-masked", reviewer=reviewer, reviewer_note=note,
+                                 force_mask_blocks=True, create_review=False, synthetic=mode == "synthetic")
+        item.update(status="approved-masked", reviewer=reviewer, reviewer_note=note, mode=mode,
                     blocklist_additions=added, updated_at=now(), resolved_at=now(),
                     findings=res["findings"], result_ref=self.vault.put_blob(
                         {"sanitized_content": res["sanitized_content"],
-                         "sanitized_segments": res["sanitized_segments"]}))
+                         "sanitized_segments": res["sanitized_segments"], "mode": mode}))
         self.vault.save_review(item)
         res["review_id"] = rid
         return res
@@ -335,11 +339,24 @@ class Scanner:
         item = self.vault.get_review(rid)
         if not item:
             raise KeyError(rid)
-        out = {"id": rid, "status": item["status"], "sanitized_content": None, "sanitized_segments": None}
+        out = {"id": rid, "status": item["status"], "sanitized_content": None, "sanitized_segments": None,
+               "mode": item.get("mode"), "released_at": item.get("released_at")}
         if item["status"] == "approved-masked" and item.get("result_ref"):
             blob = self.vault.get_blob(item["result_ref"])
             out.update(blob)
+            out["mode"] = blob.get("mode") or item.get("mode") or "masked"
         return out
+
+    def mark_released(self, rid: str) -> dict:
+        """Records that the owner's chat sent the approved prompt. The first call sets `released_at`; later calls
+        return the item unchanged (a second release is allowed, and does not move the timestamp)."""
+        item = self.vault.get_review(rid)
+        if not item:
+            raise KeyError(rid)
+        if not item.get("released_at"):
+            item["released_at"] = now()
+            self.vault.save_review(item)
+        return item
 
 
 def _summary(findings: list[dict]) -> dict:

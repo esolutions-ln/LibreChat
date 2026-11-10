@@ -9,6 +9,7 @@ Consumers: the gateway (Agent 2) calls `/scan/*` and `/unmask`; the review scree
 session, not from client input.
 
 Synthetic-data analysis endpoints (`/analysis/*`) are specified in `docs/nmb/ANALYSIS.md`.
+Synthetic approval of held prompts (`mode` on approve, `synthetic` on `/unmask`, `released_at`) is in `docs/nmb/SYNTHETIC.md`.
 
 ## Conventions
 - Auth: header `X-NMB-Service-Key: <NMB_SERVICE_KEY>` on every request (401 if wrong/missing; disabled only if the env var is unset, dev only).
@@ -60,7 +61,7 @@ Synthetic-data analysis endpoints (`/analysis/*`) are specified in `docs/nmb/ANA
 Segment locations (never contain document content):
 `text`; docx `body.p[3]`, `body.t[1].r[2].c[0]`, `header.s0.p[0]`, `footer.s0...`, `props.author`;
 xlsx `sheet[1].name`, `sheet[1]!B7`, `sheet[1]!B7.comment` (sheet index is 1-based, hidden sheets included);
-pdf `page[2]`, `props.author`.
+pdf `page[2]` (a page without tables), `page[2].p[1]` (text outside the tables of a page that has them), `page[2].t[1].r[3].c[2]` (one table cell; ruled tables are extracted cell by cell and rendered as `| a | b |` rows), `props.author`.
 
 Decision rules: any `BLOCK` finding gives `review`, unless that entity has `block_outcome: reject` (e.g. `PRIVATE_KEY`) which gives `reject` and the original is never stored. A PDF page without a text layer (scanned) gives `review` (or `reject` if `files.scanned_pdf_action: reject`). Otherwise any `MASK` gives `mask`, else `allow`. Unsupported/oversize/corrupt files give `reject` with no findings.
 
