@@ -24,6 +24,7 @@ const createAnalysisExecuteLimiter = (analysis, opts = {}) => {
     legacyHeaders: false,
     keyGenerator: (req) => req.user?.id ?? removePorts(req),
     store: limiterCache(name),
+    validate: { creationStack: false },
     handler: (_req, res) => {
       res.status(429).json({
         type: 'nmb_analysis_rate_limited',

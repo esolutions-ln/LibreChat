@@ -65,14 +65,28 @@ def _numeric(real: pd.Series, kind: str, n: int, rng) -> pd.Series:
     return pd.Series(np.round(v, dec), dtype=object)
 
 
+def _naive_us(real: pd.Series) -> pd.Series:
+    """Non-null datetimes as tz-naive wall-clock values with an explicit microsecond unit.
+
+    pandas 3 does not guarantee a nanosecond unit (parsed strings are often microseconds, and a Series may be
+    seconds or milliseconds), so a raw `astype("int64")` has no fixed meaning. Casting to a named unit first does.
+    """
+    x = real
+    if not pd.api.types.is_datetime64_any_dtype(x):
+        x = pd.to_datetime(x, errors="coerce", utc=True)  # object columns of mixed offsets
+    if getattr(x.dt, "tz", None) is not None:
+        x = x.dt.tz_localize(None)
+    return x.dropna().astype("datetime64[us]")
+
+
 def _datetime(real: pd.Series, n: int, rng) -> pd.Series:
-    x = real.dropna()
+    x = _naive_us(real)
     if x.empty:
         return pd.Series([None] * n, dtype=object)
-    ns = x.astype("int64")
-    lo, hi = int(ns.quantile(0.01)), int(ns.quantile(0.99))
-    draw = pd.to_datetime(rng.integers(lo, max(hi, lo) + 1, n))
-    if bool((x.dt.normalize() == x).all()):
+    micro = x.astype("int64")  # microseconds since the epoch, by the cast above
+    lo, hi = int(micro.quantile(0.01)), int(micro.quantile(0.99))
+    draw = pd.to_datetime(rng.integers(lo, max(hi, lo) + 1, n), unit="us")
+    if bool((x == x.dt.normalize()).all()):
         return pd.Series(draw.strftime("%Y-%m-%d"), dtype=object)
     return pd.Series(draw.strftime("%Y-%m-%d %H:%M:%S"), dtype=object)
 

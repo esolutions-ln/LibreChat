@@ -162,22 +162,91 @@ def extract_xlsx(data: bytes) -> Extracted:
 
 
 # ---------------------------------------------------------------- pdf
+def _pdf_tables(page) -> list[tuple[tuple[float, float, float, float], list[list[str]]]]:
+    """Ruled tables on the page as (bbox, rows of cell text). Only grids with 2+ columns count as tables."""
+    try:
+        found = page.find_tables()
+    except Exception:  # noqa: BLE001  (an odd page must not sink the whole file; it falls back to text)
+        return []
+    out = []
+    for t in found:
+        try:
+            rows = [[(c or "").replace("\r", " ").replace("\n", " ").strip()[:MAX_CELL_CHARS] for c in row]
+                    for row in t.extract()]
+        except Exception:  # noqa: BLE001
+            continue
+        if rows and max(len(r) for r in rows) >= 2:
+            out.append((tuple(t.bbox), rows))
+    return sorted(out, key=lambda x: (x[0][1], x[0][0]))
+
+
+def _band_text(page, top: float, bottom: float, boxes: list) -> str:
+    """Text whose characters sit in the vertical band and outside every table box."""
+    def keep(o) -> bool:
+        if o.get("object_type") != "char":
+            return True
+        cy = (o["top"] + o["bottom"]) / 2
+        if not top <= cy < bottom:
+            return False
+        cx = (o["x0"] + o["x1"]) / 2
+        return not any(b[0] <= cx <= b[2] and b[1] <= cy <= b[3] for b in boxes)
+
+    return (page.filter(keep).extract_text() or "").strip()
+
+
+def _pdf_page(page, i: int, min_chars: int) -> tuple[list[Segment], bool, int]:
+    """Segments for one page, whether it lacks a text layer, and how many tables were found."""
+    text = (page.extract_text() or "").strip()
+    segs = [Segment(f"page[{i}].title", f"Page {i}", "heading", f"page{i}")]
+    scanned = len(text) < min_chars
+    tables = [] if scanned else _pdf_tables(page)
+    if not tables:
+        if text:
+            segs.append(Segment(f"page[{i}]", text, "p", f"page{i}"))
+        return segs, scanned, 0
+    boxes = [t[0] for t in tables]
+    cursor, para = float("-inf"), 0
+    for ti, (bbox, rows) in enumerate(tables, start=1):
+        if bbox[1] > cursor:
+            band = _band_text(page, cursor, bbox[1], boxes)
+            if band:
+                para += 1
+                segs.append(Segment(f"page[{i}].p[{para}]", band, "p", f"page{i}"))
+        first = True
+        for ri, row in enumerate(rows):
+            if not any(row):
+                continue
+            for ci, cell in enumerate(row):
+                segs.append(Segment(f"page[{i}].t[{ti}].r[{ri}].c[{ci}]", cell, "cell", f"page{i}.t{ti}",
+                                    ri, ci, header=first))
+            first = False
+        cursor = max(cursor, bbox[3])
+    tail = _band_text(page, cursor, float("inf"), boxes)
+    if tail:
+        para += 1
+        segs.append(Segment(f"page[{i}].p[{para}]", tail, "p", f"page{i}"))
+    return segs, False, len(tables)
+
+
 def extract_pdf(data: bytes, min_chars: int = 20) -> Extracted:
+    """Text pages stay plain text; ruled tables become one scan segment per cell (rendered as pipe tables).
+
+    pdfplumber returns a table row as one text line, which merges neighbouring cells into a single digit run
+    that the account/card/phone recognisers then misread, so tables are extracted cell by cell instead.
+    """
     import pdfplumber
 
     segs: list[Segment] = []
     scanned: list[int] = []
+    tables = 0
     try:
         with pdfplumber.open(io.BytesIO(data)) as pdf:
             n = len(pdf.pages)
             for i, page in enumerate(pdf.pages, start=1):
-                text = (page.extract_text() or "").strip()
-                segs.append(Segment(f"page[{i}].title", f"Page {i}", "heading", f"page{i}"))
-                if len(text) >= min_chars:
-                    segs.append(Segment(f"page[{i}]", text, "p", f"page{i}"))
-                else:
-                    if text:
-                        segs.append(Segment(f"page[{i}]", text, "p", f"page{i}"))
+                page_segs, no_text, found = _pdf_page(page, i, min_chars)
+                segs.extend(page_segs)
+                tables += found
+                if no_text:
                     scanned.append(i)
             meta_info = pdf.metadata or {}
         for k in ("Author", "Title", "Subject", "Keywords", "Creator"):
@@ -191,7 +260,8 @@ def extract_pdf(data: bytes, min_chars: int = 20) -> Extracted:
         pages = ", ".join(map(str, scanned[:20])) + ("..." if len(scanned) > 20 else "")
         reason = (f"PDF has no usable text layer on page(s) {pages} (scanned or image-only). "
                   "Content cannot be inspected; manual review or OCR required.")
-    return Extracted(segs, {"type": "pdf", "pages": n, "pages_without_text": scanned}, needs_review=reason)
+    return Extracted(segs, {"type": "pdf", "pages": n, "pages_without_text": scanned, "tables": tables},
+                     needs_review=reason)
 
 
 EXTRACTORS = {".docx": extract_docx, ".xlsx": extract_xlsx, ".pdf": extract_pdf}

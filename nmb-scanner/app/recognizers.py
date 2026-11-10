@@ -195,9 +195,35 @@ def _thousands_grouped(v: str) -> bool:
     return _THOUSANDS.fullmatch(v) is not None
 
 
+_SPACE_RUN = re.compile(r"\d+(?: \d+)+")
+_YEAR_GROUP = re.compile(r"(?:19|20)\d{2}")
+# Context that keeps a figure-shaped run detectable as a phone number / card ("tel 123 456 789 012").
+_PHONE_LABELS = [r"\b(?:phone|tel|telephone|mobile|cell|whatsapp|call|fax)\b"]
+_CARD_LABELS = [r"\bcard\b", r"\bpan\b", r"\b(?:visa|mastercard|amex)\b"]
+
+
+def _grouped_figures(v: str) -> bool:
+    """Digit groups separated only by single spaces that read as table figures rather than an identifier:
+    thousands (`1 234 567 890`), a run of years (`2022 2023 2024`), or three or more 3-digit groups."""
+    if not _SPACE_RUN.fullmatch(v):
+        return False
+    groups = v.split(" ")
+    if 1 <= len(groups[0]) <= 3 and all(len(g) == 3 for g in groups[1:]):
+        return True
+    if all(_YEAR_GROUP.fullmatch(g) for g in groups):
+        return True
+    return sum(len(g) == 3 for g in groups) >= 3
+
+
+def _figure_like(v: str) -> bool:
+    return _thousands_grouped(v) or _grouped_figures(v)
+
+
 def _card_validator(v: str):
     d = _digits(v)
-    return luhn_ok(d) and len(v) - len(d) <= 6 and not _thousands_grouped(v)
+    if not (luhn_ok(d) and len(v) - len(d) <= 6):
+        return False
+    return 0.2 if _figure_like(v) else True  # a figure-shaped run needs a card label to count
 
 
 def _swift_validator(v: str):
@@ -210,7 +236,9 @@ def _ssn_validator(v: str):
 
 
 def _phone_validator(v: str):
-    return 9 <= len(_digits(v)) <= 15
+    if not 9 <= len(_digits(v)) <= 15:
+        return False
+    return 0.2 if _figure_like(v) else True  # a figure-shaped run needs a phone label to count
 
 
 def _bare_account_validator(v: str):
@@ -219,7 +247,7 @@ def _bare_account_validator(v: str):
         return False  # a Luhn-valid 13-19 digit run is a card; the card recogniser owns it
     if not 10 <= len(d) <= 16:
         return False
-    if _thousands_grouped(v):
+    if _figure_like(v):
         return 0.2  # a financial figure: below min_score unless an explicit account label precedes it
     return True
 
@@ -235,7 +263,7 @@ def build_static_recognizers() -> list[EntityRecognizer]:
             validator=_swift_validator, context=["swift", "bic", "sort code", "correspondent"], boosted=0.9),
         RegexRecognizer("IBAN", [(r"\b[A-Za-z]{2}\d{2}(?: ?[A-Za-z0-9]{2,4}){2,8}\b", 0.9)], validator=iban_ok),
         RegexRecognizer("CREDIT_CARD", [(r"(?<![\w-])\d(?:[ -]?\d){12,18}(?![\w-])", 0.9)],
-                        validator=_card_validator),
+                        validator=_card_validator, boosted=0.9, soft_context=_CARD_LABELS),
         RegexRecognizer("ZW_NATIONAL_ID", [(r"\b\d{2}[- ]?\d{6,7}[- ]?[A-Za-z][- ]?\d{2}\b", 0.85)]),
         RegexRecognizer("US_SSN", [(r"\b\d{3}-\d{2}-\d{4}\b", 0.85)], validator=_ssn_validator),
         RegexRecognizer(
@@ -243,7 +271,7 @@ def build_static_recognizers() -> list[EntityRecognizer]:
             [(r"(?<![\w])(?:\+|00)\d{1,3}[ -]?\(?\d{1,4}\)?(?:[ -]?\d{2,4}){2,4}(?!\w)", 0.8),
              (r"(?<![\w+])0\d{2,3}[ -]?\d{3}[ -]?\d{3,4}(?!\w)", 0.6)],
             validator=_phone_validator, context=["phone", "tel", "mobile", "cell", "whatsapp", "call"],
-            boosted=0.85),
+            boosted=0.85, soft_context=_PHONE_LABELS),
         RegexRecognizer("EMAIL", [(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b", 0.95)]),
         RegexRecognizer(
             "PRIVATE_KEY",
