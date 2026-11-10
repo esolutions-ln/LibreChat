@@ -67,7 +67,9 @@ Use two browser windows side by side, one per user (use a private window for the
 
 **Know before you promise:** the result is displayed in the workbench page, not inside the chat transcript. That is deliberate (real results must not enter the conversation).
 
-**Not yet verified on the VM:** steps 5-7 with code Claude wrote there (the dlp-review hold stopped the chat step, which was held for "2 x PERSON, 3 x PHONE_NUMBER"). The sandbox itself was verified earlier on the VM with fixed code. Steps 1-3 were run on the VM.
+**Verified on the VM:** steps 1-3, and steps 6-7 with a hand-written script of the kind the prompt asks for. On the twin it gave Premium 11,391.71, Retail 10,137.30, SME 8,174.31; on the real file Premium 41,049.76, Retail 1,566.68, SME 10,803.42, which is a good contrast to point out. The chart and Excel/PDF buttons appear in both runs.
+
+**Not yet verified:** step 4 (Claude's reply). The dlp-review hold stopped it ("2 x PERSON, 3 x PHONE_NUMBER"), so the code in steps 5-7 was not yet written by Claude on the VM. Run it once after the policy change.
 
 ## If something goes wrong
 
