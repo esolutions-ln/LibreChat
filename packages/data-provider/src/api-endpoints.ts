@@ -567,6 +567,7 @@ export const nmbReviewOriginal = (id: string) => `${nmbReview(id)}/original`;
 export const nmbReviewApprove = (id: string) => `${nmbReview(id)}/approve`;
 export const nmbReviewReject = (id: string) => `${nmbReview(id)}/reject`;
 export const nmbBlocklist = () => `${nmb()}/blocklist`;
+export const nmbSubmissions = () => `${nmb()}/submissions`;
 export const nmbSubmission = (id: string) => `${nmb()}/submissions/${encodeURIComponent(id)}`;
 export const nmbUnmask = () => `${nmb()}/unmask`;
 /** Analysis routes live under `/api/nmb/analysis`; report export under `/api/nmb/reports`. */

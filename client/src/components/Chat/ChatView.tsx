@@ -24,6 +24,7 @@ import ApprovalProvider from './Messages/Content/ApprovalContext';
 import ConversationStarters from './Input/ConversationStarters';
 import ProjectBadge from '~/components/Projects/ProjectBadge';
 import { OwnerTextProvider } from './Messages/PrivateText';
+import NmbFilesNotice from '~/components/NmbFiles';
 import PendingTurn from './Messages/PendingTurn';
 import { FLAT_THREAD } from './Messages/Thread';
 import { useAddedResponse } from '~/hooks';
@@ -140,18 +141,21 @@ function ChatViewPane({
                       )}
                       starters={<ConversationStarters />}
                       renderComposer={({ isLanding, footerBelow, project, placeholder }) => (
-                        <ChatForm
-                          index={index}
-                          routePending={routePending}
-                          placeholder={placeholder}
-                          project={project}
-                          isLandingPage={isLanding}
-                          enterToSend={enterToSend}
-                          autoSendText={autoSendText}
-                          speechSettingsInitialized={speechSettingsInitialized}
-                          footerBelow={footerBelow}
-                          centerFormOnLanding={centerFormOnLanding}
-                        />
+                        <>
+                          <NmbFilesNotice />
+                          <ChatForm
+                            index={index}
+                            routePending={routePending}
+                            placeholder={placeholder}
+                            project={project}
+                            isLandingPage={isLanding}
+                            enterToSend={enterToSend}
+                            autoSendText={autoSendText}
+                            speechSettingsInitialized={speechSettingsInitialized}
+                            footerBelow={footerBelow}
+                            centerFormOnLanding={centerFormOnLanding}
+                          />
+                        </>
                       )}
                       renderFooter={renderFooter}
                       renderMascot={(bandRef, landing) => (

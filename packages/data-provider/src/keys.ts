@@ -39,6 +39,7 @@ export enum QueryKeys {
   nmbOriginal = 'nmbOriginal',
   nmbBlocklist = 'nmbBlocklist',
   nmbSubmission = 'nmbSubmission',
+  nmbHeldFiles = 'nmbHeldFiles',
   nmbDatasets = 'nmbDatasets',
   nmbDataset = 'nmbDataset',
   nmbSynthetic = 'nmbSynthetic',

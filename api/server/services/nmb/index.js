@@ -73,6 +73,7 @@ function getNmb() {
       isReviewer: (user) => hasCapability(user, SystemCapabilities.REVIEW_PROMPTS),
       recordAudit,
       getUserLabels,
+      listFileHolds: db.listNmbFileHolds,
     }),
   };
   return instance;

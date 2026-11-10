@@ -6,6 +6,7 @@ import type {
   TNmbRejectBody,
   TNmbApproveBody,
   TNmbSubmission,
+  TNmbHeldFiles,
   TNmbReviewsResponse,
   TNmbBlocklistChoice,
   TNmbBlocklistEntry,
@@ -90,6 +91,9 @@ export const getNmbBlocklist = (): Promise<{ entries: TNmbBlocklistEntry[] }> =>
   request.get(endpoints.nmbBlocklist());
 export const addNmbBlocklist = (entries: TNmbBlocklistChoice[]): Promise<{ added: number }> =>
   request.post(endpoints.nmbBlocklist(), { entries });
+export const getNmbHeldFiles = (): Promise<TNmbHeldFiles> =>
+  request.get(endpoints.nmbSubmissions());
+
 export const getNmbSubmission = (id: string): Promise<TNmbSubmission> =>
   request.get(endpoints.nmbSubmission(id));
 /** `synthetic` also restores the fake values issued for a synthetic approval, not only tokens. */

@@ -7,8 +7,8 @@ import type { ScannerClient } from './scanner';
 import type { NmbConfig } from './types';
 import { screenFile, screenText, type Screened } from './screen';
 import { sendNmbError, CLEARED_SUFFIX } from './chat';
-import { resolveIdentity } from './identity';
 import { isNmbMisconfigured } from './config';
+import { resolveIdentity } from './identity';
 
 const SCANNED_DOCUMENTS = new Set(['.docx', '.pdf', '.xlsx']);
 const SCANNED_TEXT = new Set(['.txt', '.csv', '.tsv', '.md', '.json', '.xml', '.log']);
@@ -24,7 +24,12 @@ export interface UploadedFile {
 export interface NmbUploadDeps {
   config: NmbConfig;
   scanner: ScannerClient;
-  createNmbFileHold: (hold: { userId: string; sha256: string; reviewId: string }) => Promise<void>;
+  createNmbFileHold: (hold: {
+    userId: string;
+    sha256: string;
+    reviewId: string;
+    filename?: string;
+  }) => Promise<void>;
   findNmbFileHolds: (userId: string, sha256: string) => Promise<Array<{ reviewId: string }>>;
   consumeNmbFileHold: (reviewId: string, userId: string) => Promise<boolean>;
 }
@@ -170,6 +175,7 @@ export function createNmbUploadGate(deps: NmbUploadDeps) {
           userId: identity.userId,
           sha256,
           reviewId: screened.reviewId,
+          filename: path.basename(file.originalname),
         });
       }
       respond(res, screened);

@@ -5,10 +5,15 @@ export type NmbFileHoldRecord = {
   userId: string;
   sha256: string;
   reviewId: string;
+  filename?: string;
 };
+
+export type NmbFileHoldView = { reviewId: string; filename?: string; createdAt?: Date };
 
 export type NmbFileHoldMethods = {
   createNmbFileHold: (hold: NmbFileHoldRecord) => Promise<void>;
+  /** One user's holds that have not been released yet, newest first. */
+  listNmbFileHolds: (userId: string) => Promise<NmbFileHoldView[]>;
   /** Unreleased holds for one user's exact file, newest first. */
   findNmbFileHolds: (userId: string, sha256: string) => Promise<NmbFileHoldRecord[]>;
   /** Atomically consumes a hold; true only for the caller that released it. */
@@ -20,6 +25,19 @@ export function createNmbFileHoldMethods(mongoose: typeof import('mongoose')): N
 
   async function createNmbFileHold(hold: NmbFileHoldRecord): Promise<void> {
     await model().create(hold);
+  }
+
+  async function listNmbFileHolds(userId: string): Promise<NmbFileHoldView[]> {
+    const rows = await model()
+      .find({ userId, releasedAt: { $exists: false } })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+    return rows.map((r) => ({
+      reviewId: r.reviewId,
+      filename: r.filename,
+      createdAt: r.createdAt,
+    }));
   }
 
   async function findNmbFileHolds(userId: string, sha256: string): Promise<NmbFileHoldRecord[]> {
@@ -39,5 +57,5 @@ export function createNmbFileHoldMethods(mongoose: typeof import('mongoose')): N
     return res.modifiedCount === 1;
   }
 
-  return { createNmbFileHold, findNmbFileHolds, consumeNmbFileHold };
+  return { createNmbFileHold, listNmbFileHolds, findNmbFileHolds, consumeNmbFileHold };
 }

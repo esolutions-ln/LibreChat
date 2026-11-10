@@ -9,6 +9,7 @@ const h = (name) => (req, res, next) => getNmb().handlers[name](req, res, next);
 
 /** Any authenticated user */
 router.get('/me', h('me'));
+router.get('/submissions', h('myHeldFiles'));
 router.get('/submissions/:id', h('mySubmission'));
 router.post('/unmask', h('unmask'));
 

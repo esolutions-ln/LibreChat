@@ -5,6 +5,7 @@ import type {
   TNmbReviewsResponse,
   TNmbOriginal,
   TNmbSubmission,
+  TNmbHeldFiles,
   TNmbBlocklistEntry,
   TNmbReviewStatus,
 } from 'librechat-data-provider';
@@ -63,6 +64,17 @@ export const useNmbBlocklistQuery = (
       ...config,
     },
   );
+
+/** The end user's held uploads and where each review stands; polled so the owner hears the decision. */
+export const useNmbHeldFilesQuery = (
+  config?: UseQueryOptions<TNmbHeldFiles>,
+): QueryObserverResult<TNmbHeldFiles> =>
+  useQuery<TNmbHeldFiles>([QueryKeys.nmbHeldFiles], () => dataService.getNmbHeldFiles(), {
+    retry: false,
+    refetchOnWindowFocus: true,
+    refetchInterval: 15_000,
+    ...config,
+  });
 
 /** The end user's own held submission; polled while it is pending. */
 export const useNmbSubmissionQuery = (

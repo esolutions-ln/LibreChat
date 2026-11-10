@@ -6,6 +6,8 @@ export interface INmbFileHold extends Document {
   /** SHA-256 of the uploaded bytes; a later identical upload by the same user is matched on it. */
   sha256: string;
   reviewId: string;
+  /** Name of the uploaded file, so the owner can be told which document was decided. */
+  filename?: string;
   /** Set once the approved, sanitised content has been released for one upload. */
   releasedAt?: Date;
   tenantId?: string;
@@ -17,6 +19,7 @@ const nmbFileHoldSchema: Schema<INmbFileHold> = new Schema<INmbFileHold>(
     userId: { type: String, required: true },
     sha256: { type: String, required: true },
     reviewId: { type: String, required: true, unique: true },
+    filename: { type: String, maxlength: 255 },
     releasedAt: { type: Date },
     tenantId: { type: String, index: true },
   },

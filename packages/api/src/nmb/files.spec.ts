@@ -41,7 +41,7 @@ async function makeReq(name: string, content: string | Buffer) {
 }
 
 function setup(scanner = fakeScanner()) {
-  const holds: Array<{ userId: string; sha256: string; reviewId: string }> = [];
+  const holds: Array<{ userId: string; sha256: string; reviewId: string; filename?: string }> = [];
   const consumed = new Set<string>();
   const gate = createNmbUploadGate({
     config: baseConfig,
@@ -127,7 +127,11 @@ describe('upload gate', () => {
     expect(res.statusCode).toBe(423);
     expect(res.body).toMatchObject({ type: 'nmb_review_pending', review_id: 'rev_0123456789ab' });
     expect(holds).toEqual([
-      expect.objectContaining({ userId: 'user-1', reviewId: 'rev_0123456789ab' }),
+      expect.objectContaining({
+        userId: 'user-1',
+        reviewId: 'rev_0123456789ab',
+        filename: 'doc.docx',
+      }),
     ]);
   });
 

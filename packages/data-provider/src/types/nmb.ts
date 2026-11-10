@@ -73,6 +73,19 @@ export type TNmbBlocklistEntry = {
 };
 
 /** The end user's view of one of their own held submissions. */
+/** A document the user uploaded that was held for review and has not been attached again yet. */
+export type TNmbHeldFile = {
+  id: string;
+  filename: string | null;
+  status: TNmbReviewStatus;
+  created_at: string;
+  resolved_at: string | null;
+  /** Only set for a rejected review. */
+  reason: string | null;
+};
+
+export type TNmbHeldFiles = { items: TNmbHeldFile[] };
+
 export type TNmbSubmission = {
   id: string;
   source: 'text' | 'file';

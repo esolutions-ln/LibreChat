@@ -15,6 +15,7 @@ function setup(
     reviewer?: boolean;
     scanner?: ReturnType<typeof fakeScanner>;
     config?: typeof baseConfig;
+    listFileHolds?: jest.Mock;
   } = {},
 ) {
   const audits: NmbAuditEntry[] = [];
@@ -28,6 +29,7 @@ function setup(
       audits.push(e);
     },
     getUserLabels: async (ids) => Object.fromEntries(ids.map((i) => [i, `label-${i}`])),
+    listFileHolds: opts.listFileHolds,
   });
   return { handlers, scanner, audits, isReviewer };
 }
@@ -399,6 +401,81 @@ describe('end-user endpoints', () => {
       mockReq({ method: 'GET', user: { id: 'user-2', role: 'USER' }, params: { id: ID } }),
     );
     expect(other.res.statusCode).toBe(404);
+  });
+
+  it("held files: lists the caller's own holds with status, and exposes the note only on rejection", async () => {
+    const listFileHolds = jest
+      .fn()
+      .mockResolvedValue([
+        { reviewId: 'rev_aaaaaaaaaaaa', filename: 'portfolio.pdf' },
+        { reviewId: 'rev_bbbbbbbbbbbb', filename: 'other.pdf' },
+        { reviewId: 'rev_cccccccccccc' },
+      ]);
+    const getReview = jest.fn(async (id: string) => {
+      if (id === 'rev_aaaaaaaaaaaa') {
+        return reviewItem({
+          id,
+          user: 'user-1',
+          status: 'approved-masked',
+          reviewer_note: 'private',
+        });
+      }
+      if (id === 'rev_bbbbbbbbbbbb') {
+        return reviewItem({
+          id,
+          user: 'user-1',
+          status: 'rejected',
+          reviewer_note: 'no client data',
+        });
+      }
+      return reviewItem({ id, user: 'someone-else', status: 'pending' });
+    });
+    const { handlers } = setup({ scanner: fakeScanner({ getReview }), listFileHolds });
+    const { res } = await call(handlers.myHeldFiles, mockReq({ method: 'GET' }));
+    const body = res.body as { items: Array<Record<string, unknown>> };
+    expect(listFileHolds).toHaveBeenCalledWith('user-1');
+    expect(body.items).toHaveLength(2);
+    expect(body.items[0]).toEqual(
+      expect.objectContaining({
+        filename: 'portfolio.pdf',
+        status: 'approved-masked',
+        reason: null,
+      }),
+    );
+    expect(body.items[1]).toEqual(
+      expect.objectContaining({
+        filename: 'other.pdf',
+        status: 'rejected',
+        reason: 'no client data',
+      }),
+    );
+    expect(JSON.stringify(body)).not.toContain('private');
+    expect(JSON.stringify(body)).not.toContain('findings');
+  });
+
+  it('held files: a review the scanner no longer knows is skipped, and a scanner outage is an error', async () => {
+    const listFileHolds = jest.fn().mockResolvedValue([{ reviewId: 'rev_aaaaaaaaaaaa' }]);
+    const gone = setup({
+      scanner: fakeScanner({
+        getReview: jest.fn().mockRejectedValue(new ScannerError('not_found')),
+      }),
+      listFileHolds,
+    });
+    expect((await call(gone.handlers.myHeldFiles, mockReq({ method: 'GET' }))).res.body).toEqual({
+      items: [],
+    });
+    const down = setup({
+      scanner: fakeScanner({
+        getReview: jest.fn().mockRejectedValue(new ScannerError('unavailable')),
+      }),
+      listFileHolds,
+    });
+    expect((await call(down.handlers.myHeldFiles, mockReq({ method: 'GET' }))).res.statusCode).toBe(
+      503,
+    );
+    expect(
+      (await call(setup().handlers.myHeldFiles, mockReq({ method: 'GET' }))).res.statusCode,
+    ).toBe(404);
   });
 
   it('unmask uses the session scope and roles; a body-supplied conversation is ignored', async () => {

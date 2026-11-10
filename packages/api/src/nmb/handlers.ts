@@ -33,6 +33,10 @@ export interface NmbHandlerDeps {
   recordAudit: (entry: NmbAuditEntry) => Promise<unknown>;
   /** id -> display label, for the queue. */
   getUserLabels?: (ids: string[]) => Promise<Record<string, string>>;
+  /** The caller's held uploads that have not been re-attached yet. */
+  listFileHolds?: (
+    userId: string,
+  ) => Promise<Array<{ reviewId: string; filename?: string; createdAt?: Date }>>;
 }
 
 type SessionUser = {
@@ -69,6 +73,7 @@ export interface NmbHandlers {
   requireReviewer: RequestHandler;
   me: RequestHandler;
   mySubmission: RequestHandler;
+  myHeldFiles: RequestHandler;
   unmask: RequestHandler;
   listReviews: RequestHandler;
   getReview: RequestHandler;
@@ -251,6 +256,44 @@ export function createNmbHandlers(deps: NmbHandlerDeps): NmbHandlers {
           released: Boolean(item.released_at),
           reason: item.status === 'rejected' ? (item.reviewer_note ?? null) : null,
         });
+      } catch (error) {
+        fail(res, error);
+      }
+    }) as RequestHandler,
+
+    /** GET /submissions: the caller's held uploads and where each review stands, for the owner notice */
+    myHeldFiles: (async (req, res) => {
+      const identity = resolveIdentity(req, config);
+      if (!config.enabled || !identity || !deps.listFileHolds) {
+        res.status(404).json({ message: 'Not found' });
+        return;
+      }
+      try {
+        const holds = await deps.listFileHolds(identity.userId);
+        const settled = await Promise.all(
+          holds.map(async (hold) => {
+            try {
+              const item = await scanner.getReview(hold.reviewId);
+              if (item.user !== identity.userId) {
+                return null;
+              }
+              return {
+                id: item.id,
+                filename: hold.filename ?? null,
+                status: item.status,
+                created_at: item.created_at,
+                resolved_at: item.resolved_at,
+                reason: item.status === 'rejected' ? (item.reviewer_note ?? null) : null,
+              };
+            } catch (error) {
+              if (error instanceof ScannerError && error.kind === 'not_found') {
+                return null;
+              }
+              throw error;
+            }
+          }),
+        );
+        res.json({ items: settled.filter((i) => i != null) });
       } catch (error) {
         fail(res, error);
       }
