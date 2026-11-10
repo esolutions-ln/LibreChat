@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Spinner } from '@librechat/client';
 import {
+  useNmbRunQuery,
   useNmbMeQuery,
   useNmbDatasetsQuery,
   useNmbAnalysisLimitsQuery,
@@ -10,6 +12,7 @@ import { useDocumentTitle, useLocalize } from '~/hooks';
 import OpenSidebar from '~/components/Chat/Menus/OpenSidebar';
 import useDrawerViewport from '~/hooks/Nav/useDrawerViewport';
 import Upload from './Upload';
+import Result from './Result';
 import Runner from './Runner';
 import Twin from './Twin';
 import { cn } from '~/utils';
@@ -22,9 +25,13 @@ export default function NmbAnalysisView() {
   const localize = useLocalize();
   const isSmallScreen = useDrawerViewport();
   const { data: me, isLoading: meLoading } = useNmbMeQuery();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(params.get('dataset'));
   const enabled = me?.enabled === true && me.analysis === true;
   const { data, isLoading, isError, refetch } = useNmbDatasetsQuery({ enabled });
+  // A chat agent that ran code on the real data links here with ?run=: the result is shown to the user only.
+  const runId = params.get('run') ?? undefined;
+  const chatRun = useNmbRunQuery(enabled ? runId : undefined);
   const { data: limits } = useNmbAnalysisLimitsQuery({ enabled });
   const remove = useDeleteNmbDatasetMutation({ onSuccess: () => setOpenId(null) });
   useDocumentTitle(`${localize('com_nmb_analysis_title')} | LibreChat`);
@@ -96,6 +103,20 @@ export default function NmbAnalysisView() {
           </ul>
         </nav>
         <main className="min-h-0 flex-1 overflow-y-auto">
+          {runId != null && (
+            <section className="mb-6 flex flex-col gap-2" aria-labelledby="nmb-chat-run-title">
+              <h2 id="nmb-chat-run-title" className="text-base font-semibold">
+                {localize('com_nmb_analysis_chat_run')}
+              </h2>
+              {chatRun.isLoading && <Spinner className="size-5" />}
+              {chatRun.isError && (
+                <p role="alert" className="text-text-destructive text-sm">
+                  {localize('com_nmb_analysis_chat_run_failed')}
+                </p>
+              )}
+              {chatRun.data && <Result run={chatRun.data} />}
+            </section>
+          )}
           {!selected ? (
             <p className="text-text-secondary text-sm">{localize('com_nmb_analysis_select')}</p>
           ) : (

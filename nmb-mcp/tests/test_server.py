@@ -99,13 +99,13 @@ async def test_test_code_runs_on_the_twin_and_returns_clean_output(fake):
 @pytest.mark.anyio
 async def test_private_run_never_returns_output_from_the_real_data(fake):
     fake.run_result = {
-        "status": "ok", "stdout": SECRET, "stderr": SECRET, "files": [{"name": "r.csv"}],
-        "violations": [], "duration_ms": 9,
+        "id": "run_0123456789ab", "status": "ok", "stdout": SECRET, "stderr": SECRET,
+        "files": [{"name": "r.csv"}], "violations": [], "duration_ms": 9,
     }
     out = await call(fake, "run_code_private", {"dataset_id": DS, "code": "print(1)"})
     assert SECRET not in json.dumps(out)
     assert out["private"] is True and out["status"] == "ok"
-    assert out["result_location"] == "https://chat.example/analysis"
+    assert out["result_location"] == f"https://chat.example/analysis?dataset={DS}&run=run_0123456789ab"
     assert fake.calls[-1][1][-1] == "real"
 
 
@@ -168,6 +168,56 @@ async def test_the_rate_limit_applies_per_user(fake):
     async with Client(server) as client:
         results = [parse(await client.call_tool("list_datasets", {})) for _ in range(3)]
     assert "error" not in results[0] and results[2]["error"] == "rate_limited"
+
+
+@pytest.mark.anyio
+async def test_every_result_is_scanned_for_the_same_user_before_it_is_returned(fake):
+    out = await call(fake, "list_datasets")
+    assert "datasets" in out
+    user, text = fake.scanned[0]
+    assert user == "alice" and DS in text
+
+
+@pytest.mark.anyio
+async def test_a_masked_result_is_returned_masked_with_a_notice(fake):
+    fake.scan = {"decision": "mask", "sanitized_content": json.dumps({"datasets": [{"id": "<ACCOUNT_001>"}]})}
+    out = await call(fake, "list_datasets")
+    assert out["datasets"][0]["id"] == "<ACCOUNT_001>" and "masked" in out["nmb_notice"]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("scan", [
+    {"decision": "review", "findings": [{"entity": "IBAN"}, {"entity": "IBAN"}]},
+    {"decision": "reject", "findings": [{"entity": "PRIVATE_KEY"}]},
+    {"decision": "mask", "sanitized_content": "not json"},
+    {"decision": "mask", "sanitized_content": "[1, 2]"},
+])
+async def test_a_result_the_scanner_will_not_release_is_withheld_whole(fake, scan):
+    fake.run_result = {"id": "run_0123456789ab", "status": "ok", "stdout": SECRET, "stderr": "", "files": []}
+    fake.scan = scan
+    out = await call(fake, "test_code", {"dataset_id": DS, "code": "print(1)"})
+    assert out["error"] == "result_withheld" and SECRET not in json.dumps(out)
+
+
+@pytest.mark.anyio
+async def test_withheld_message_names_the_kinds_of_finding_but_no_values(fake):
+    fake.scan = {"decision": "review", "findings": [{"entity": "IBAN", "value": SECRET}]}
+    out = await call(fake, "list_datasets")
+    assert "IBAN" in out["message"] and SECRET not in json.dumps(out)
+
+
+@pytest.mark.anyio
+async def test_when_the_scanner_is_down_nothing_is_returned(fake):
+    from nmbmcp.scanner import ScannerError
+    fake.scan = ScannerError("scanner_unavailable")
+    out = await call(fake, "list_datasets")
+    assert out["error"] == "scanner_unavailable" and "datasets" not in out
+
+
+@pytest.mark.anyio
+async def test_scanning_can_be_switched_off_for_tests_only(fake):
+    out = await call(fake, "list_datasets", scan_results=False)
+    assert "datasets" in out and fake.scanned == []
 
 
 @pytest.mark.anyio

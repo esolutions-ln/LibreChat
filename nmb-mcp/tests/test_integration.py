@@ -122,6 +122,16 @@ async def test_test_code_runs_on_the_twin(scanner_url, dataset_id):
 
 
 @pytest.mark.anyio
+async def test_a_result_with_an_account_identifier_never_reaches_the_model(scanner_url, dataset_id):
+    iban = "GB82WEST12345698765432"
+    srv = server(scanner_url)
+    code = f"print('{iban}')\n"
+    out = await call(srv, "test_code", {"dataset_id": dataset_id, "code": code})
+    assert iban not in json.dumps(out)
+    assert out.get("error") == "result_withheld" or "masked" in out.get("nmb_notice", "")
+
+
+@pytest.mark.anyio
 async def test_private_run_computes_on_real_data_but_returns_nothing(scanner_url, dataset_id, real):
     total = str(round(float(real["balance_usd"].sum()), 2))
     code = f"import pandas as pd\ndf = pd.read_csv(DATA_PATH)\nprint('TOTAL', round(df['balance_usd'].sum(), 2))\n"

@@ -27,6 +27,8 @@ class Settings:
     sample_rows: int
     max_text: int
     rate_per_minute: int
+    # Pass every tool result through the NMB scanner before the model sees it. Turn off only for tests.
+    scan_results: bool
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -43,4 +45,5 @@ class Settings:
             sample_rows=_int("NMB_MCP_SAMPLE_ROWS", 20),
             max_text=_int("NMB_MCP_MAX_TEXT", 4000),
             rate_per_minute=_int("NMB_MCP_RATE_PER_MINUTE", 30),
+            scan_results=os.environ.get("NMB_MCP_SCAN_RESULTS", "true").strip().lower() not in ("0", "false", "no"),
         )

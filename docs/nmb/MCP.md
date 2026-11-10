@@ -36,6 +36,12 @@ Then it cuts the result down:
   are not offered because they reveal one individual's value.
 - At most two group-by columns, four metrics and `NMB_MCP_MAX_GROUPS` groups. A grouping with far more groups is refused.
 
+**Every result is scanned.** After a tool finishes, its whole result goes through the NMB scanner (`POST /scan/text`,
+same policy as prompts) before the model can see it. `allow` returns it unchanged; `mask` returns it with placeholders
+and an `nmb_notice`; `review`, `reject`, an unparseable masked result or a scanner outage withhold it entirely with
+`result_withheld` (naming the kinds of finding, never a value). A result the scanner holds also creates a review item
+for the user, as any held text does. `NMB_MCP_SCAN_RESULTS=false` turns this off for tests only.
+
 Tool failures return `{"error": code, "message": ...}` with stable codes (`unauthenticated`, `rate_limited`,
 `invalid_dataset_id`, `not_found`, `no_twin`, `column_not_groupable`, ...). A message never contains a data value or
 scanner text.
@@ -63,6 +69,7 @@ scanner text.
 | `NMB_MCP_MAX_GROUPS` / `MAX_GROUP_BY` | 50 / 2 | result limits |
 | `NMB_MCP_SAMPLE_ROWS` / `MAX_TEXT` | 20 / 4000 | twin sample rows, characters of output |
 | `NMB_MCP_RATE_PER_MINUTE` | 30 | calls per user per minute |
+| `NMB_MCP_SCAN_RESULTS` | true | pass every result through the NMB scanner |
 
 ## Run it
 ```sh
@@ -101,8 +108,6 @@ appears in a twin sample, that a private run's real output is absent from the re
 Run: `cd nmb-mcp && python -m pytest tests` (needs the scanner's dependencies for the integration suite).
 
 ## What this does not do yet
-- **Tool results are not scanned by the NMB gateway.** The policy above is the only filter between a result and the model.
-  Passing MCP results through the scanner as well (defence in depth) still has to be built.
 - **The caller is trusted to name the user.** A shared bearer token authenticates LibreChat, not the person. For production,
   validate the user's Keycloak token in the server (the SDK has a token verifier hook) and drop the user header.
 - **Aggregate release is reference-grade.** Dropping small groups does not stop differencing across many queries (for
@@ -111,8 +116,8 @@ Run: `cd nmb-mcp && python -m pytest tests` (needs the scanner's dependencies fo
 - **Data values are untrusted text.** Values are only returned inside structured JSON with control characters removed and
   length capped, but a cell can still contain words aimed at the model. Treat the model's behaviour on tool output as
   something to test, not as solved.
-- **Private results have no listing.** `run_code_private` returns a pointer to Data analysis, but the page shows runs started
-  from the page; a view of runs started through MCP is not built.
+- **Private results are opened by link only.** `run_code_private` returns `…/analysis?dataset=<id>&run=<id>` and the Data
+  analysis page shows that run to its owner (another user's run answers "could not load"). There is no list of past runs.
 - **One data source.** This server fronts the uploaded-CSV workbench. A bank's own systems need their own servers with the
   same shape: a catalog over views or a semantic layer, an aggregate query tool with the policy above, and no free-form
   SQL. Writes (payments, updates) belong in a separate server behind per-action human approval.

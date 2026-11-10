@@ -4,6 +4,7 @@ import type {
   TNmbMe,
   TNmbReviewsResponse,
   TNmbOriginal,
+  TNmbRun,
   TNmbSubmission,
   TNmbHeldFiles,
   TNmbBlocklistEntry,
@@ -64,6 +65,18 @@ export const useNmbBlocklistQuery = (
       ...config,
     },
   );
+
+/** One of the user's own runs, for the link a chat agent gives them. Not polled: a run is finished. */
+export const useNmbRunQuery = (
+  id: string | undefined,
+  config?: UseQueryOptions<TNmbRun>,
+): QueryObserverResult<TNmbRun> =>
+  useQuery<TNmbRun>([QueryKeys.nmbRun, id], () => dataService.getNmbRun(id as string), {
+    enabled: id != null,
+    retry: false,
+    refetchOnWindowFocus: false,
+    ...config,
+  });
 
 /** The end user's held uploads and where each review stands; polled so the owner hears the decision. */
 export const useNmbHeldFilesQuery = (

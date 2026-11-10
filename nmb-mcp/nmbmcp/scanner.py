@@ -30,9 +30,14 @@ class Scanner:
         if self._owned:
             self._http.close()
 
-    def _call(self, method: str, path: str, **kw: Any) -> Any:
+    def scan_text(self, user: str, text: str) -> dict:
+        """The scanner's verdict on text that is about to go to the model: allow, mask, review or reject."""
+        body = {"text": text, "conversation_id": f"mcp:{user}", "user": user, "roles": ["user"]}
+        return self._call("POST", "/scan/text", prefix="", json=body)
+
+    def _call(self, method: str, path: str, prefix: str = "/analysis", **kw: Any) -> Any:
         try:
-            res = self._http.request(method, "/analysis" + path, headers=self._extra or None, **kw)
+            res = self._http.request(method, prefix + path, headers=self._extra or None, **kw)
         except httpx.HTTPError as exc:
             raise ScannerError("scanner_unavailable") from exc
         if res.status_code >= 500:

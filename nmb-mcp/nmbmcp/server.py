@@ -76,6 +76,28 @@ class Limiter:
         return True
 
 
+def screen_result(cfg: Settings, scanner: Scanner, user: str, result: dict) -> tuple[dict, str]:
+    """Passes a finished tool result through the NMB scanner before the model can see it. Allowed text goes out
+    unchanged; masked text goes out only if it is still the same JSON shape; anything the scanner would hold or
+    reject, or any scanner failure, withholds the whole result. Returns the result and the verdict."""
+    if not cfg.scan_results:
+        return result, "unscanned"
+    verdict = scanner.scan_text(user, json.dumps(result))
+    decision = verdict.get("decision")
+    if decision == "allow":
+        return result, "allow"
+    if decision == "mask":
+        try:
+            masked = json.loads(verdict.get("sanitized_content") or "")
+        except ValueError:
+            masked = None
+        if isinstance(masked, dict):
+            masked["nmb_notice"] = "The NMB scanner masked some values in this result."
+            return masked, "mask"
+    kinds = sorted({f.get("entity", "?") for f in verdict.get("findings", [])})
+    raise PolicyError("result_withheld", f"The NMB scanner would not release this result ({', '.join(kinds) or 'policy'}).")
+
+
 def _audit(tool: str, user: str, outcome: str, **counts: Any) -> None:
     """Ids and counts only: never code, column names or values."""
     audit_log.info(
@@ -100,7 +122,8 @@ def build_server(cfg: Settings, scanner: Scanner) -> MCPServer:
                     if ds is not None and not _DATASET.match(ds):
                         raise PolicyError("invalid_dataset_id")
                     result, counts = await asyncio.to_thread(fn, user, **kw)
-                    _audit(name, user, "ok", **counts)
+                    result, verdict = await asyncio.to_thread(screen_result, cfg, scanner, user, result)
+                    _audit(name, user, "ok", scan=verdict, **counts)
                     return result
                 except PolicyError as exc:
                     _audit(name, user, exc.code)
@@ -175,7 +198,11 @@ def build_server(cfg: Settings, scanner: Scanner) -> MCPServer:
         """Run the same code on the REAL data. The output is private to the user and is not returned to you; you only
         learn whether it ran. Tell the user to open the result in Data analysis."""
         run = scanner.execute(user, dataset_id, code, "real")
-        view = f"{cfg.public_url}/analysis" if cfg.public_url else "the Data analysis page"
+        view = (
+            f"{cfg.public_url}/analysis?dataset={dataset_id}&run={run['id']}"
+            if cfg.public_url and run.get("id")
+            else "the Data analysis page"
+        )
         failed = run["status"] != "ok"
         out = {
             "status": run["status"],

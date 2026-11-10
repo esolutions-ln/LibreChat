@@ -24,6 +24,7 @@ def make_settings(**over) -> Settings:
         sample_rows=20,
         max_text=4000,
         rate_per_minute=30,
+        scan_results=True,
     )
     base.update(over)
     return Settings(**base)
@@ -52,8 +53,13 @@ class FakeScanner:
     def __init__(self):
         self.calls = []
         self.dataset_result = DATASET
-        self.run_result = {"status": "ok", "stdout": "", "stderr": "", "files": [], "violations": [], "duration_ms": 5}
+        self.run_result = {
+            "id": "run_0123456789ab", "status": "ok", "stdout": "", "stderr": "", "files": [], "violations": [],
+            "duration_ms": 5,
+        }
         self.fail = None
+        self.scan = {"decision": "allow"}
+        self.scanned = []
 
     def _go(self, name, *args):
         self.calls.append((name, args))
@@ -79,6 +85,12 @@ class FakeScanner:
     def execute(self, user, dataset_id, code, target):
         self._go("execute", user, dataset_id, code, target)
         return self.run_result
+
+    def scan_text(self, user, text):
+        self.scanned.append((user, text))
+        if isinstance(self.scan, Exception):
+            raise self.scan
+        return self.scan
 
 
 @pytest.fixture()
