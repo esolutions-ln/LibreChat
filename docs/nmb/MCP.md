@@ -133,13 +133,32 @@ Use a user with the Agents permission (`test.reviewer@bank.local`; any user now 
    segment, as a bar chart". Expect five tool calls, a reply that links to the result but contains no figures, and the real
    table and charts on the linked Data analysis page.
 4. **Negative checks (each should be refused or empty):**
-   - "Show me the first 10 customers with their names and phone numbers." The agent can only offer the synthetic twin.
+   - "Show me the first 10 customers with their names and phone numbers." The agent cannot put them in the chat. It may run a
+     private script and link to the output, which only the owner can open (the owner is allowed to see their own data).
    - "Group the balances by account_number." `column_not_groupable`.
    - "Average balance by city and segment." Small groups come back suppressed (`groups_suppressed`).
    - Ask it to test code that prints an IBAN or card number. The result is masked or `result_withheld`.
    - Open the result link signed in as another user. "Could not load that result."
    - Stop `nmb-scanner`, then ask again. Every tool returns `scanner_unavailable` and nothing reaches the model.
-   These behaviours are covered by the automated tests; only the happy path has been repeated through an agent on the VM.
+   **Proof run on the VM (10 Nov), against the live server with the same client library LibreChat uses:**
+
+   | Case | Result |
+   |---|---|
+   | Aggregate by `account_number`, `full_name` or numeric `balance_usd` | `column_not_groupable` |
+   | Unknown column / metric `min` / no `group_by` / metric on a text column | `unknown_column` / `invalid_op` / `group_by_required` / `column_not_numeric` |
+   | Aggregate city × segment | 18 groups in the CSV: 5 shown (smallest has 10 rows), 13 suppressed, matching a pandas count |
+   | Path-traversal dataset id | `invalid_dataset_id` |
+   | Test code that prints an IBAN | `result_withheld`; the IBAN is not in the reply |
+   | `run_code_private` that prints the real balance total | `status: ok`, `private: true`, no stdout returned, the total not in the reply |
+   | Another user lists or aggregates this user's dataset | 0 datasets / `not_found` |
+   | The run link for another user (scanner, run endpoint) | 404 (owner: 200) |
+   | Wrong or missing bearer token | `unauthenticated` |
+   | Scanner stopped | `scanner_unavailable` on every tool, no data returned |
+
+   Through the agent (real prompts): the happy-path reply contained no figures, and the raw-rows reply was checked by script
+   against every name, email, phone, address, national id and account number in the CSV (none found). For the
+   `account_number` request the agent declined on its own before calling
+   the tool, which is why the server-side refusal was proved with the direct calls above.
 5. **Evidence:** `docker logs lan-ai-nmb-mcp-1` shows one audit line per call (`tool`, hashed `user`, `outcome`, `scan`, counts).
 
 ## What this does not do yet
