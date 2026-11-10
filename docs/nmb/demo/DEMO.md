@@ -16,7 +16,7 @@ Use two browser windows side by side, one per user (use a private window for the
 1. **DLP policy decision (needs the owner's approval).** The older dlp-review gateway still has its own review queue. It blocks prompts containing names, phone numbers, card-like numbers and so on, *after* the NMB scanner has already handled them. Today both demo scenarios stop there with "Held for review ... Blocked: PERSON, PHONE_NUMBER". Until dlp-review stops holding these types, neither scenario completes. Proposed change:
    - Set these dlp-review entity actions from `BLOCK` to `MASK`: `PERSON, ACCOUNT_NUMBER, CREDIT_CARD, IBAN_CODE, SWIFT_CODE, ZW_NATIONAL_ID, US_SSN`; and `PHONE_NUMBER`, `EMAIL_ADDRESS` to `ALLOW`. Secrets, IPs and keys stay `BLOCK`.
    - A backup of the current table is in `/opt/lan-ai/backups/policy_entity-before-nmb-queue-20261110.csv` on the VM. Roll back by loading that CSV back into `policy_entity`.
-   - This was **not applied**: it weakens a blocking control, so it needs your explicit go-ahead.
+   - **Applied on the VM on 10 Nov with the owner's approval** (dlp-review restarted afterwards). Both scenarios now complete.
 2. Clear old demo state: in Data analysis delete earlier datasets; reject any old items in Reviews.
 3. Sign both users in and open: analyst on `/c/new`, reviewer on `/reviews`.
 4. Pick the model: in the analyst chat choose **Bank AI** then **claude-sonnet** (all four Claude models are listed: haiku, sonnet, opus, fable).
@@ -36,12 +36,15 @@ Use two browser windows side by side, one per user (use a private window for the
    - *Expect:* it attaches as `customer-portfolio.pdf.masked.md`. (Files are released when the same user re-attaches the identical file; this is a by-design one-time release.)
 4. **Analyst:** type the question and send:
    > From the attached tables: which segment has the highest total balance, how many customers are 30+ days in arrears, and who are the three customers with the largest balances (include their phone numbers)?
-   - *Expect (after the policy change above):* a streamed answer from Claude. Account numbers and phones in the reply are shown as the real values to the analyst, because the gateway restores them for the owner only.
-   - *Say:* "The model worked on fake values; only this user's screen shows the real ones."
+   - *Expect:* a streamed answer from Claude: highest-balance segment, the arrears count, and a table of the three largest balances with phone numbers.
+   - *Say:* "The model only ever saw fake values." Point out that the **phone numbers in the answer are the synthetic ones** (for example `+263 13 154 2353`), not the ones in the PDF.
 
-**What to know:** customer *names* are not detected by the NMB scanner (no name model is installed). In this stack names are masked as placeholders by dlp-review's Presidio instead of being replaced by fake names. Do not claim "names are replaced with realistic fake names" in this demo.
+**What to know:**
+- For an attached file, the reply is *not* converted back to the real phone numbers or account numbers; the analyst sees the synthetic ones. (Restoring real values in the reply works for typed prompts, not for released files.) Present this as "analysis on safe data".
+- Customer *names* are not detected by the NMB scanner (no name model is installed). dlp-review's Presidio masks them as placeholders; in the rehearsal some names came back restored and some stayed as placeholders ("Some names appear as placeholders"). Do not claim names are replaced with realistic fake names.
+- The reply can quote totals that Claude computed from the tables; they are only as good as the extraction. Spot-check one number against the PDF before presenting it.
 
-**Not yet verified end to end on the VM:** the final answer in step 4. The dlp-review hold interrupted it. Run the whole scenario once before the customer sees it.
+**Verified on the VM (10 Nov):** steps 1-4. With the file already released, Claude answered: Premium highest at 451,547.38, 47 customers 30+ days in arrears, top three balances listed.
 
 ## Scenario 2: structured data, synthetic twin, Claude writes the code, run on the real data
 
@@ -69,7 +72,7 @@ Use two browser windows side by side, one per user (use a private window for the
 
 **Verified on the VM:** steps 1-3, and steps 6-7 with a hand-written script of the kind the prompt asks for. On the twin it gave Premium 11,391.71, Retail 10,137.30, SME 8,174.31; on the real file Premium 41,049.76, Retail 1,566.68, SME 10,803.42, which is a good contrast to point out. The chart and Excel/PDF buttons appear in both runs.
 
-**Not yet verified:** step 4 (Claude's reply). The dlp-review hold stopped it ("2 x PERSON, 3 x PHONE_NUMBER"), so the code in steps 5-7 was not yet written by Claude on the VM. Run it once after the policy change.
+**Verified end to end on the VM after the policy change:** Claude returned a script (it cleans values, writes a segment summary and calls `save_chart` with two series). It passed on the twin (100 rows) and on the real file (120 rows), with the real result marked private. Note: the chart plots dollars and percentages on one axis, so the percentage bars look small; say so, or ask Claude for two charts.
 
 ## If something goes wrong
 
