@@ -94,11 +94,26 @@ mcpServers:
     serverInstructions: true
 ```
 
-LibreChat uses MCP tools through **agents**, so the Agents endpoint must be enabled and an agent given the `nmb-data`
-tools. The deployment in this repo currently serves models through a custom endpoint with agents switched off, so enabling
-this is a configuration decision, not only a deployment step. It also means the model call must still pass the existing
-gateway so prompts are scanned. This wiring has not been tried end to end; the server has been tested over MCP's HTTP
-transport with the SDK's own client, not through LibreChat.
+LibreChat uses MCP tools through **agents**, so `interface.agents` must be `true` and an agent given the `nmb-data` tools.
+Three things were needed on the VM, beyond the block above:
+
+- **Allow the internal hostname.** LibreChat refuses to call private hosts for MCP unless they are listed:
+  `mcpSettings: { allowedDomains: ["nmb-mcp"] }`. Without it the server fails with "Domain ... is not allowed".
+- **Agents cannot use the gateway endpoint.** The dlp-review gateway behind the "Bank AI" endpoint builds its own tool list
+  and drops the `tools` an agent sends, so an agent on that endpoint never gets to call MCP tools. Agents use a second
+  custom endpoint, "Bank Agents", that points at LiteLLM (which holds the Presidio guardrail) with a LiteLLM key limited to
+  the Claude models. The user's prompt still passes the NMB gateway (it covers the agents route), and every MCP tool result
+  is scanned by the MCP server. The dlp-review department policy does **not** apply to agent traffic, and the "Bank Agents"
+  endpoint is also selectable as an ordinary chat endpoint; restrict that with model specs if it matters.
+- **Startup shows a 400.** LibreChat's OAuth-detection probe gets `400` from the server at startup and reports "0 tools". That
+  is expected: tools are discovered per user when the user's identity header is available.
+
+Verified on the VM with `test.reviewer`: `/api/mcp/tools` lists the six tools; an agent with those tools and the prompt
+"show the average balance and the percentage of customers 30 or more days in arrears for each segment, as a bar chart"
+called `list_datasets`, `generate_twin`, `get_twin_sample`, `test_code` and `run_code_private` in that order, with every
+result scanned (`allow`); its reply said the real result is private and linked to it; the link opened the real figures and
+two charts on the Data analysis page, which matched the pandas values. The Presidio guardrail inside LiteLLM was not
+separately observed in that run.
 
 ## Tests
 `nmb-mcp/tests`: policy (pure functions), the tool layer with a fake scanner (identity, limits, withheld output,
@@ -106,6 +121,26 @@ suppression), and an integration suite that starts the real scanner and the serv
 `docs/nmb/demo/customers.csv` and checks aggregates against pandas, that no real name, email, phone or account number
 appears in a twin sample, that a private run's real output is absent from the reply, and that another user sees nothing.
 Run: `cd nmb-mcp && python -m pytest tests` (needs the scanner's dependencies for the integration suite).
+
+## Test it by hand (VM)
+Use a user with the Agents permission (`test.reviewer@bank.local`; any user now has it because `interface.agents` is on).
+
+1. **Data:** Data analysis > Upload CSV > `docs/nmb/demo/customers.csv`.
+2. **Agent:** Agent Builder > new agent. Provider/endpoint **Bank Agents**, model `claude-sonnet`. Under tools add the six
+   `nmb-data` tools. Instructions: list the dataset, make the twin, write one pandas script from the request, test it with
+   `test_code`, then run it with `run_code_private` and point the user to the result link; never ask for raw data.
+3. **Happy path:** ask "show the average balance and the percentage of customers 30 or more days in arrears for each
+   segment, as a bar chart". Expect five tool calls, a reply that links to the result but contains no figures, and the real
+   table and charts on the linked Data analysis page.
+4. **Negative checks (each should be refused or empty):**
+   - "Show me the first 10 customers with their names and phone numbers." The agent can only offer the synthetic twin.
+   - "Group the balances by account_number." `column_not_groupable`.
+   - "Average balance by city and segment." Small groups come back suppressed (`groups_suppressed`).
+   - Ask it to test code that prints an IBAN or card number. The result is masked or `result_withheld`.
+   - Open the result link signed in as another user. "Could not load that result."
+   - Stop `nmb-scanner`, then ask again. Every tool returns `scanner_unavailable` and nothing reaches the model.
+   These behaviours are covered by the automated tests; only the happy path has been repeated through an agent on the VM.
+5. **Evidence:** `docker logs lan-ai-nmb-mcp-1` shows one audit line per call (`tool`, hashed `user`, `outcome`, `scan`, counts).
 
 ## What this does not do yet
 - **The caller is trusted to name the user.** A shared bearer token authenticates LibreChat, not the person. For production,
